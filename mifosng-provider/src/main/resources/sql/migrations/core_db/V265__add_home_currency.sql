@@ -1,0 +1,1 @@
+ALTER TABLE `m_organisation_currency` ADD `is_home_currency` BOOLEAN NOT NULL;

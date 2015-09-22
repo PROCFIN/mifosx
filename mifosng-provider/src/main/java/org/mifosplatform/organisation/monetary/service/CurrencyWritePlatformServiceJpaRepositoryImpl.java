@@ -65,6 +65,8 @@ public class CurrencyWritePlatformServiceJpaRepositoryImpl implements CurrencyWr
 
         final String[] currencies = command.arrayValueOfParameterNamed("currencies");
 
+        final String homeCurrency = command.stringValueOfParameterNamed("homeCurrencyCode");
+
         final Map<String, Object> changes = new LinkedHashMap<>();
         final List<String> allowedCurrencyCodes = new ArrayList<>();
         final Set<OrganisationCurrency> allowedCurrencies = new HashSet<>();
@@ -72,7 +74,7 @@ public class CurrencyWritePlatformServiceJpaRepositoryImpl implements CurrencyWr
 
             final ApplicationCurrency currency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currencyCode);
 
-            final OrganisationCurrency allowedCurrency = currency.toOrganisationCurrency();
+            final OrganisationCurrency allowedCurrency = currency.toOrganisationCurrency(currencyCode.equalsIgnoreCase(homeCurrency));
 
             allowedCurrencyCodes.add(currencyCode);
             allowedCurrencies.add(allowedCurrency);
