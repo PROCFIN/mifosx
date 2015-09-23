@@ -15,6 +15,7 @@ public class CurrencyData {
     private final int decimalPlaces;
     private final Integer inMultiplesOf;
     private final String displaySymbol;
+    @SuppressWarnings("unused")
     private final Boolean isHomeCurrency;
     @SuppressWarnings("unused")
     private final String nameCode;
@@ -27,14 +28,7 @@ public class CurrencyData {
 
     public CurrencyData(final String code, final String name, final int decimalPlaces, final Integer inMultiplesOf,
             final String displaySymbol, final String nameCode) {
-        this.code = code;
-        this.name = name;
-        this.decimalPlaces = decimalPlaces;
-        this.inMultiplesOf = inMultiplesOf;
-        this.displaySymbol = displaySymbol;
-        this.nameCode = nameCode;
-        this.displayLabel = generateDisplayLabel();
-        this.isHomeCurrency = null;
+        this(code, name, decimalPlaces, inMultiplesOf, displaySymbol, nameCode, null);
     }
 
     public CurrencyData(final String code, final String name, final int decimalPlaces, final Integer inMultiplesOf,
