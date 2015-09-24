@@ -135,6 +135,19 @@ public class ExchangeRateApiResource {
         return this.toApiJsonSerializer.serialize(settings, exchangeRateData, ExchangeRateApiConstants.EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS);
     }
 
+    @DELETE
+    @Path("{exchangeRateId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String deleteGLAccount(@PathParam("exchangeRateId") final Long exchangeRateId) {
+
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().deleteExchangeRate(exchangeRateId).build();
+
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
     @PUT
     @Path("{exchangeRateId}")
     @Consumes({MediaType.APPLICATION_JSON})

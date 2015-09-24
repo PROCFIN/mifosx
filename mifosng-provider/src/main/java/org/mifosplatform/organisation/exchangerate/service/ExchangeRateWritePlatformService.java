@@ -13,4 +13,6 @@ public interface ExchangeRateWritePlatformService {
     CommandProcessingResult createExchangeRate(final JsonCommand command);
 
     CommandProcessingResult updateExchangeRate(final Long exchangeRateId, final JsonCommand command);
+
+    CommandProcessingResult deleteExchangeRate(final Long exchangeRateId);
 }

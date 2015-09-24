@@ -101,6 +101,20 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
         }
     }
 
+    @Transactional
+    @Override
+    public CommandProcessingResult deleteExchangeRate(final Long exchangeRateId) {
+        final ExchangeRate exchangeRate = this.exchangeRateRepository.findOne(exchangeRateId);
+
+        if (exchangeRate == null) {
+            throw new ExchangeRateNotFoundException(exchangeRateId);
+        }
+
+        this.exchangeRateRepository.delete(exchangeRate);
+
+        return new CommandProcessingResultBuilder().withEntityId(exchangeRateId).build();
+    }
+
     /*
      * Guaranteed to throw an exception no matter what the data integrity issue is.
      */

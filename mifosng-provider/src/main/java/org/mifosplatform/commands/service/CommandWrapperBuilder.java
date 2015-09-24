@@ -200,6 +200,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder deleteExchangeRate(final Long exchangeRateId) {
+        this.actionName = "DELETE";
+        this.entityName = "EXCHANGERATE";
+        this.entityId = exchangeRateId;
+        this.href = "/exchangerate/" + exchangeRateId;
+        return this;
+    }
+
     public CommandWrapperBuilder createGuarantor(final Long loanId) {
         this.actionName = "CREATE";
         this.entityName = "GUARANTOR";
