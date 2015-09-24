@@ -5,41 +5,49 @@
  */
 package org.mifosplatform.accounting.financialactivityaccount.data;
 
+import org.mifosplatform.accounting.glaccount.data.GLAccountData;
+import org.mifosplatform.organisation.monetary.data.CurrencyData;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.mifosplatform.accounting.glaccount.data.GLAccountData;
 
 public class FinancialActivityAccountData {
 
     private final Long id;
     private final FinancialActivityData financialActivityData;
     private final GLAccountData glAccountData;
+    private final String currency;
     private Map<String, List<GLAccountData>> glAccountOptions;
     private List<FinancialActivityData> financialActivityOptions;
+    private Collection<CurrencyData> currencyOptions;
 
     public FinancialActivityAccountData() {
         this.id = null;
         this.glAccountData = null;
         this.financialActivityData = null;
         this.glAccountOptions = null;
+        this.currency = null;
         this.financialActivityOptions = null;
+        this.currencyOptions = null;
     }
 
-    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData) {
+    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData, String currency) {
         this.id = id;
         this.glAccountData = glAccountData;
         this.financialActivityData = financialActivityData;
+        this.currency = currency;
     }
 
     public FinancialActivityAccountData(Map<String, List<GLAccountData>> glAccountOptions,
-            List<FinancialActivityData> financialActivityOptions) {
+                                        List<FinancialActivityData> financialActivityOptions, Collection<CurrencyData> currencyOptions) {
         this.id = null;
         this.glAccountData = null;
         this.financialActivityData = null;
+        this.currency = null;
         this.glAccountOptions = glAccountOptions;
         this.financialActivityOptions = financialActivityOptions;
-
+        this.currencyOptions = currencyOptions;
     }
 
     public List<FinancialActivityData> getFinancialActivityOptions() {
@@ -70,4 +78,11 @@ public class FinancialActivityAccountData {
         return id;
     }
 
+    public Collection<CurrencyData> getCurrencyOptions() {
+        return currencyOptions;
+    }
+
+    public void setCurrencyOptions(Collection<CurrencyData> currencyOptions) {
+        this.currencyOptions = currencyOptions;
+    }
 }

@@ -12,7 +12,7 @@ import java.util.Set;
  * Enum of all parameters passed in while creating/updating a GL Account
  ***/
 public enum FinancialActivityAccountsJsonInputParams {
-    FINANCIAL_ACTIVITY_ID("financialActivityId"), GL_ACCOUNT_ID("glAccountId");
+    FINANCIAL_ACTIVITY_ID("financialActivityId"), GL_ACCOUNT_ID("glAccountId"), CURRENCY("currency");
 
     private final String value;
 

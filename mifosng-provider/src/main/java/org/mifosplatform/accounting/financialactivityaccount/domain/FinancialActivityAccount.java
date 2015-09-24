@@ -26,17 +26,21 @@ public class FinancialActivityAccount extends AbstractPersistable<Long> {
     @Column(name = "financial_activity_type", nullable = false)
     private Integer financialActivityType;
 
-    public static FinancialActivityAccount createNew(final GLAccount glAccount, final Integer financialAccountType) {
-        return new FinancialActivityAccount(glAccount, financialAccountType);
+    @Column(name = "currency", nullable = false, length = 3)
+    private String currency;
+
+    public static FinancialActivityAccount createNew(final GLAccount glAccount, final Integer financialAccountType, final String currency) {
+        return new FinancialActivityAccount(glAccount, financialAccountType, currency);
     }
 
     protected FinancialActivityAccount() {
         //
     }
 
-    private FinancialActivityAccount(final GLAccount glAccount, final int financialAccountType) {
+    private FinancialActivityAccount(final GLAccount glAccount, final int financialAccountType, final String currency) {
         this.glAccount = glAccount;
         this.financialActivityType = financialAccountType;
+        this.currency = currency;
     }
 
     public GLAccount getGlAccount() {
@@ -53,5 +57,13 @@ public class FinancialActivityAccount extends AbstractPersistable<Long> {
 
     public void updateFinancialActivityType(final Integer financialActivityType) {
         this.financialActivityType = financialActivityType;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void updateCurrency(String currency) {
+        this.currency = currency;
     }
 }
