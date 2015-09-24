@@ -8,6 +8,8 @@ package org.mifosplatform.organisation.exchangerate.api;
 import org.mifosplatform.commands.domain.CommandWrapper;
 import org.mifosplatform.commands.service.CommandWrapperBuilder;
 import org.mifosplatform.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.api.ApiRequestParameterHelper;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
 import org.mifosplatform.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -17,10 +19,6 @@ import org.mifosplatform.organisation.exchangerate.data.ExchangeRateData;
 import org.mifosplatform.organisation.exchangerate.service.ExchangeRatePlatformService;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
-import org.mifosplatform.organisation.office.data.OfficeData;
-import org.mifosplatform.organisation.office.service.OfficeReadPlatformService;
-import org.mifosplatform.organisation.staff.data.StaffData;
-import org.mifosplatform.organisation.staff.service.StaffReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -54,24 +52,27 @@ public class ExchangeRateApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final CurrencyReadPlatformService currencyReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
     public ExchangeRateApiResource(final PlatformSecurityContext context, final ExchangeRatePlatformService readPlatformService,
                                    final DefaultToApiJsonSerializer<ExchangeRateData> toApiJsonSerializer,
                                    final ApiRequestParameterHelper apiRequestParameterHelper,
                                    final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-                                   final CurrencyReadPlatformService currencyReadPlatformService) {
+                                   final CurrencyReadPlatformService currencyReadPlatformService,
+                                   final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.currencyReadPlatformService = currencyReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     @GET
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
     public String retrieveExchangeRate(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
@@ -83,8 +84,8 @@ public class ExchangeRateApiResource {
     }
 
     @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
     public String createExchangeRate(final String apiRequestBodyAsJson) {
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder().createExchangeRate().withJson(apiRequestBodyAsJson).build();
@@ -95,10 +96,33 @@ public class ExchangeRateApiResource {
     }
 
     @GET
+    @Path("template")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String retrieveNewAccountDetails(@Context final UriInfo uriInfo, @QueryParam("type") final Integer type) {
+
+        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
+
+        ExchangeRateData exchangeRateData = ExchangeRateData.sensibleDefaultsForNewExchangeRateCreation();
+        exchangeRateData = handleTemplate(exchangeRateData);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, exchangeRateData, RESPONSE_DATA_PARAMETERS);
+    }
+
+    private ExchangeRateData handleTemplate(final ExchangeRateData exchangeRateData) {
+        final Collection<CodeValueData> allowedExchangeRateTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME);
+        final Collection<CurrencyData> allowedExchangeRateCurrencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrenciesExceptHomeCurrency();
+
+        return new ExchangeRateData(exchangeRateData, allowedExchangeRateCurrencyOptions, allowedExchangeRateTypeOptions);
+    }
+
+    @GET
     @Path("{exchangeRateId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String retreiveExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId, @Context final UriInfo uriInfo) {
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String retrieveExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
@@ -106,16 +130,15 @@ public class ExchangeRateApiResource {
 
         ExchangeRateData exchangeRateData = this.readPlatformService.retrieveExchangeRate(exchangeRateId);
         if (settings.isTemplate()) {
-            final Collection<CurrencyData> selectedCurrencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrencies();
-            exchangeRateData = ExchangeRateData.templateData(exchangeRateData, selectedCurrencyOptions);
+            exchangeRateData = handleTemplate(exchangeRateData);
         }
         return this.toApiJsonSerializer.serialize(settings, exchangeRateData, ExchangeRateApiConstants.EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS);
     }
 
     @PUT
     @Path("{exchangeRateId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
     public String updateExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId, final String apiRequestBodyAsJson) {
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder().updateExchangeRate(exchangeRateId).withJson(apiRequestBodyAsJson).build();

@@ -48,8 +48,8 @@ public final class ExchangeRateCommandFromApiJsonDeserializer {
 
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
-        final String type = this.fromApiJsonHelper.extractStringNamed(ExchangeRateApiConstants.typeParamName, element);
-        baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(type).notBlank().notExceedingLengthOf(50);
+        final Long typeId = this.fromApiJsonHelper.extractLongNamed(ExchangeRateApiConstants.typeParamName, element);
+        baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull().positiveAmount();
 
         final String currency = this.fromApiJsonHelper.extractStringNamed(ExchangeRateApiConstants.currencyParamName, element);
         baseDataValidator.reset().parameter(ExchangeRateApiConstants.currencyParamName).value(currency).notBlank().notExceedingLengthOf(3);
@@ -88,8 +88,8 @@ public final class ExchangeRateCommandFromApiJsonDeserializer {
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         if (this.fromApiJsonHelper.parameterExists(ExchangeRateApiConstants.typeParamName, element)) {
-            final String type = this.fromApiJsonHelper.extractStringNamed(ExchangeRateApiConstants.typeParamName, element);
-            baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(type).notBlank().notExceedingLengthOf(50);
+            final Long typeId = this.fromApiJsonHelper.extractLongNamed(ExchangeRateApiConstants.typeParamName, element);
+            baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull().positiveAmount();
         }
 
         if (this.fromApiJsonHelper.parameterExists(ExchangeRateApiConstants.currencyParamName, element)) {

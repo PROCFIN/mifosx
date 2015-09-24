@@ -45,6 +45,16 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
     }
 
     @Override
+    public Collection<CurrencyData> retrieveAllowedCurrenciesExceptHomeCurrency() {
+
+        this.context.authenticatedUser();
+
+        final String sql = "select " + this.organizationCurrencyMapper.schema() + " from m_organisation_currency c where c.is_home_currency=false order by c.name";
+
+        return this.jdbcTemplate.query(sql, this.organizationCurrencyMapper, new Object[] {});
+    }
+
+    @Override
     public Collection<CurrencyData> retrieveAllPlatformCurrencies() {
 
         final String sql = "select " + this.currencyRowMapper.schema() + " from m_currency c order by c.name";

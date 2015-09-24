@@ -7,6 +7,7 @@ package org.mifosplatform.organisation.exchangerate.service;
 
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDate;
+import org.mifosplatform.infrastructure.codes.data.CodeValueData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
@@ -39,8 +40,9 @@ public class ExchangeRatePlatformServiceImpl implements ExchangeRatePlatformServ
     private static final class ExchangeRateMapper implements RowMapper<ExchangeRateData> {
 
         public String schema() {
-            return " er.id as id, er.date as date, er.type as type, er.currency as currency, er.amount as amount from m_exchange_rate er "
+            return " er.id as id, er.date as date, cv.id as typeId, cv.code_value as typeValue, er.currency as currency, er.amount as amount from m_exchange_rate er "
                     + " left join m_organisation_currency oc on oc.code = er.currency"
+                    + " left join m_code_value cv on cv.id = er.type_cv_id"
                     + " left join m_currency c on c.code = er.currency";
         }
 
@@ -48,40 +50,18 @@ public class ExchangeRatePlatformServiceImpl implements ExchangeRatePlatformServ
         public ExchangeRateData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
             final Long id = rs.getLong("id");
-            final String type = rs.getString("type");
+
             final String currency = rs.getString("currency");
             final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
             final BigDecimal amount = rs.getBigDecimal("amount");
 
-            return ExchangeRateData.instance(id, date, type, currency, amount);
+            final Long typeId = rs.getLong("typeId");
+            final String typeValue = rs.getString("typeValue");
+            final CodeValueData rateType = CodeValueData.instance(typeId, typeValue);
+
+            return ExchangeRateData.instance(id, date, rateType, currency, amount);
         }
     }
-
-//    private static final class ExchangeRateLookupMapper implements RowMapper<ExchangeRateData> {
-//
-//        private final String schemaSql;
-//
-//        public ExchangeRateLookupMapper() {
-//
-//            final StringBuilder sqlBuilder = new StringBuilder(100);
-//            sqlBuilder.append("er.id as id, er.display_name as displayName ");
-//            sqlBuilder.append("from m_exchange_rate er ");
-//
-//            this.schemaSql = sqlBuilder.toString();
-//        }
-//
-//        public String schema() {
-//            return this.schemaSql;
-//        }
-//
-//        @Override
-//        public ExchangeRateData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
-//
-//            final Long id = rs.getLong("id");
-//            return ExchangeRateData.lookup(id);
-//        }
-//    }
-
 
     @Override
     public ExchangeRateData retrieveExchangeRate(final Long exchangeRateId) {

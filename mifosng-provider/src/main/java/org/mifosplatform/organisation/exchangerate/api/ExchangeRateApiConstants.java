@@ -20,7 +20,7 @@ public class ExchangeRateApiConstants {
     // request parameters
     public static final String idParamName = "id";
     public static final String dateParamName = "date";
-    public static final String typeParamName = "type";
+    public static final String typeParamName = "typeId";
     public static final String currencyParamName = "currency";
     public static final String amountParamName = "amount";
 
@@ -33,4 +33,6 @@ public class ExchangeRateApiConstants {
     public static final Set<String> EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
             typeParamName, currencyParamName, amountParamName, dateParamName, dateFormatParamName, localeParamName, allowedCurrenciesParamName
     ));
+
+    public static final String TYPE_OPTION_CODE_NAME = "ExchangeRateType";
 }

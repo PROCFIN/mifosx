@@ -5,10 +5,13 @@
  */
 package org.mifosplatform.organisation.exchangerate.service;
 
+import org.mifosplatform.infrastructure.codes.domain.CodeValue;
+import org.mifosplatform.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.mifosplatform.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.mifosplatform.organisation.exchangerate.api.ExchangeRateApiConstants;
 import org.mifosplatform.organisation.exchangerate.domain.ExchangeRate;
 import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateRepository;
 import org.mifosplatform.organisation.exchangerate.exception.ExchangeRateNotFoundException;
@@ -29,12 +32,15 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
 
     private final ExchangeRateCommandFromApiJsonDeserializer fromApiJsonDeserializer;
     private final ExchangeRateRepository exchangeRateRepository;
+    private final CodeValueRepositoryWrapper codeValueRepositoryWrapper;
 
     @Autowired
     public ExchangeRateWritePlatformServiceJpaRepositoryImpl(final ExchangeRateCommandFromApiJsonDeserializer fromApiJsonDeserializer,
-                                                             final ExchangeRateRepository exchangeRateRepository) {
+                                                             final ExchangeRateRepository exchangeRateRepository,
+                                                             final CodeValueRepositoryWrapper codeValueRepositoryWrapper) {
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.exchangeRateRepository = exchangeRateRepository;
+        this.codeValueRepositoryWrapper = codeValueRepositoryWrapper;
     }
 
     @Transactional
@@ -42,9 +48,11 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
     public CommandProcessingResult createExchangeRate(final JsonCommand command) {
 
         try {
-            this.fromApiJsonDeserializer.validateForCreate(command.json());
+            final Long typeId = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
 
-            final ExchangeRate exchangeRate = ExchangeRate.fromJson(command);
+            this.fromApiJsonDeserializer.validateForCreate(command.json());
+            CodeValue rateType = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME, typeId);
+            final ExchangeRate exchangeRate = ExchangeRate.fromJson(command, rateType);
 
             this.exchangeRateRepository.save(exchangeRate);
 
@@ -70,14 +78,23 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
                 throw new ExchangeRateNotFoundException(exchangeRateId);
             }
 
-            final Map<String, Object> changes = exchangeRateForUpdate.update(command);
+            final Map<String, Object> changesOnly = exchangeRateForUpdate.update(command);
 
-            if (!changes.isEmpty()) {
+            if (changesOnly.containsKey(ExchangeRateApiConstants.typeParamName)) {
+                final Long typeIdLongValue = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
+                CodeValue rateType = null;
+                if (typeIdLongValue != null) {
+                    rateType = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME, typeIdLongValue);
+                }
+                exchangeRateForUpdate.setRateType(rateType);
+            }
+
+            if (!changesOnly.isEmpty()) {
                 this.exchangeRateRepository.saveAndFlush(exchangeRateForUpdate);
             }
 
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(exchangeRateId)
-                    .with(changes).build();
+                    .with(changesOnly).build();
         } catch (final DataIntegrityViolationException dve) {
             handleStaffDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();

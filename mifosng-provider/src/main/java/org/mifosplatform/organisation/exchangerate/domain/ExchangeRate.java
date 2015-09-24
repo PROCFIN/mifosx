@@ -6,7 +6,9 @@
 package org.mifosplatform.organisation.exchangerate.domain;
 
 import org.joda.time.LocalDate;
+import org.mifosplatform.infrastructure.codes.domain.CodeValue;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
+import org.mifosplatform.organisation.exchangerate.api.ExchangeRateApiConstants;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import javax.persistence.*;
@@ -23,8 +25,9 @@ public class ExchangeRate extends AbstractPersistable<Long> {
     @Temporal(TemporalType.TIMESTAMP)
     private Date date;
 
-    @Column(name = "type", length = 50)
-    private String type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_cv_id")
+    private CodeValue rateType;
 
     @Column(name = "currency", length = 3)
     private String currency;
@@ -33,33 +36,29 @@ public class ExchangeRate extends AbstractPersistable<Long> {
     private BigDecimal amount;
 
 
-    public static ExchangeRate fromJson(final JsonCommand command) {
+    public static ExchangeRate fromJson(final JsonCommand command, CodeValue rateType) {
 
-        final String dateParamName = "date";
         Date date = null;
-        if (command.hasParameter(dateParamName)) {
-            date = command.localDateValueOfParameterNamed(dateParamName).toDate();
+        if (command.hasParameter(ExchangeRateApiConstants.dateParamName)) {
+            date = command.localDateValueOfParameterNamed(ExchangeRateApiConstants.dateParamName).toDate();
         }
 
-        final String typeParamName = "type";
-        final String type = command.stringValueOfParameterNamed(typeParamName);
+//        final Long typeId = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
 
-        final String currencyParamName = "currency";
-        final String currency = command.stringValueOfParameterNamed(currencyParamName);
+        final String currency = command.stringValueOfParameterNamed(ExchangeRateApiConstants.currencyParamName);
 
-        final String amountParamName = "amount";
-        final BigDecimal amount = command.bigDecimalValueOfParameterNamed(amountParamName);
+        final BigDecimal amount = command.bigDecimalValueOfParameterNamed(ExchangeRateApiConstants.amountParamName);
 
-        return new ExchangeRate(date, type, currency, amount);
+        return new ExchangeRate(date, rateType, currency, amount);
     }
 
     protected ExchangeRate() {
         //
     }
 
-    private ExchangeRate(Date date, String type, String currency, BigDecimal amount) {
+    private ExchangeRate(Date date, CodeValue rateType, String currency, BigDecimal amount) {
 
-        this.type = type;
+        this.rateType = rateType;
         this.currency = currency;
         this.amount = amount;
         this.date = date;
@@ -69,31 +68,28 @@ public class ExchangeRate extends AbstractPersistable<Long> {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(4);
 
-        final String dateParamName = "date";
-        if (command.isChangeInLocalDateParameterNamed(dateParamName, LocalDate.fromDateFields(this.date))) {
-            final LocalDate newValue = command.localDateValueOfParameterNamed(dateParamName);
-            actualChanges.put(dateParamName, newValue);
+        if (command.isChangeInLocalDateParameterNamed(ExchangeRateApiConstants.dateParamName, LocalDate.fromDateFields(this.date))) {
+            final LocalDate newValue = command.localDateValueOfParameterNamed(ExchangeRateApiConstants.dateParamName);
+            actualChanges.put(ExchangeRateApiConstants.dateParamName, newValue);
             this.date = newValue.toDate();
         }
 
-        final String typeParamName = "type";
-        if (command.isChangeInStringParameterNamed(typeParamName, this.type)) {
-            final String newValue = command.stringValueOfParameterNamed(typeParamName);
-            actualChanges.put(typeParamName, newValue);
-            this.type = newValue;
+        if (command.isChangeInLongParameterNamed(ExchangeRateApiConstants.typeParamName, this.rateType == null ? 0L : this.rateType.getId())) {
+            final Long newValue = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
+            actualChanges.put(ExchangeRateApiConstants.typeParamName, newValue);
+
+//            this.rateType = newValue;
         }
 
-        final String currencyParamName = "currency";
-        if (command.isChangeInStringParameterNamed(currencyParamName, this.currency)) {
-            final String newValue = command.stringValueOfParameterNamed(currencyParamName);
-            actualChanges.put(currencyParamName, newValue);
+        if (command.isChangeInStringParameterNamed(ExchangeRateApiConstants.currencyParamName, this.currency)) {
+            final String newValue = command.stringValueOfParameterNamed(ExchangeRateApiConstants.currencyParamName);
+            actualChanges.put(ExchangeRateApiConstants.currencyParamName, newValue);
             this.currency = newValue;
         }
 
-        final String amountParamName = "amount";
-        if (command.isChangeInBigDecimalParameterNamed(amountParamName, this.amount)) {
-            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(amountParamName);
-            actualChanges.put(amountParamName, newValue);
+        if (command.isChangeInBigDecimalParameterNamed(ExchangeRateApiConstants.amountParamName, this.amount)) {
+            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(ExchangeRateApiConstants.amountParamName);
+            actualChanges.put(ExchangeRateApiConstants.amountParamName, newValue);
             this.amount = newValue;
         }
         return actualChanges;
@@ -101,5 +97,21 @@ public class ExchangeRate extends AbstractPersistable<Long> {
 
     public boolean identifiedBy(final ExchangeRate exchangeRate) {
         return getId().equals(exchangeRate.getId());
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public void setRateType(CodeValue rateType) {
+        this.rateType = rateType;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 }
