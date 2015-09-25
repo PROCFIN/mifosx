@@ -12,10 +12,12 @@ import org.mifosplatform.infrastructure.codes.data.CodeValueData;
 import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.api.ApiRequestParameterHelper;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
+import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.mifosplatform.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
 import org.mifosplatform.organisation.exchangerate.data.ExchangeRateData;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.mifosplatform.organisation.exchangerate.service.ExchangeRatePlatformService;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
@@ -111,8 +113,7 @@ public class ExchangeRateApiResource {
     }
 
     private ExchangeRateData handleTemplate(final ExchangeRateData exchangeRateData) {
-        final Collection<CodeValueData> allowedExchangeRateTypeOptions = this.codeValueReadPlatformService
-                .retrieveCodeValuesByCode(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME);
+        final Collection<EnumOptionData> allowedExchangeRateTypeOptions = ExchangeRateType.getAllRateTypes();
         final Collection<CurrencyData> allowedExchangeRateCurrencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrenciesExceptHomeCurrency();
 
         return new ExchangeRateData(exchangeRateData, allowedExchangeRateCurrencyOptions, allowedExchangeRateTypeOptions);

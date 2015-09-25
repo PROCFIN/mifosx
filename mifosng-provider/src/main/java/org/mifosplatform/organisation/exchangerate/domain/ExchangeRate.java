@@ -6,7 +6,6 @@
 package org.mifosplatform.organisation.exchangerate.domain;
 
 import org.joda.time.LocalDate;
-import org.mifosplatform.infrastructure.codes.domain.CodeValue;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.organisation.exchangerate.api.ExchangeRateApiConstants;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -25,9 +24,9 @@ public class ExchangeRate extends AbstractPersistable<Long> {
     @Temporal(TemporalType.TIMESTAMP)
     private Date date;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_cv_id")
-    private CodeValue rateType;
+    @Column(name = "type")
+    @Convert(converter = ExchangeRateTypeConverter.class)
+    private ExchangeRateType rateType;
 
     @Column(name = "currency", length = 3)
     private String currency;
@@ -36,18 +35,18 @@ public class ExchangeRate extends AbstractPersistable<Long> {
     private BigDecimal amount;
 
 
-    public static ExchangeRate fromJson(final JsonCommand command, CodeValue rateType) {
+    public static ExchangeRate fromJson(final JsonCommand command) {
 
         Date date = null;
         if (command.hasParameter(ExchangeRateApiConstants.dateParamName)) {
             date = command.localDateValueOfParameterNamed(ExchangeRateApiConstants.dateParamName).toDate();
         }
 
-//        final Long typeId = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
-
         final String currency = command.stringValueOfParameterNamed(ExchangeRateApiConstants.currencyParamName);
 
         final BigDecimal amount = command.bigDecimalValueOfParameterNamed(ExchangeRateApiConstants.amountParamName);
+
+        final ExchangeRateType rateType = ExchangeRateType.fromInt(command.integerValueOfParameterNamed(ExchangeRateApiConstants.typeParamName));
 
         return new ExchangeRate(date, rateType, currency, amount);
     }
@@ -56,7 +55,7 @@ public class ExchangeRate extends AbstractPersistable<Long> {
         //
     }
 
-    private ExchangeRate(Date date, CodeValue rateType, String currency, BigDecimal amount) {
+    private ExchangeRate(Date date, ExchangeRateType rateType, String currency, BigDecimal amount) {
 
         this.rateType = rateType;
         this.currency = currency;
@@ -74,11 +73,15 @@ public class ExchangeRate extends AbstractPersistable<Long> {
             this.date = newValue.toDate();
         }
 
-        if (command.isChangeInLongParameterNamed(ExchangeRateApiConstants.typeParamName, this.rateType == null ? 0L : this.rateType.getId())) {
-            final Long newValue = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
-            actualChanges.put(ExchangeRateApiConstants.typeParamName, newValue);
+        Integer rateTypeId = null;
+        if (this.rateType != null) {
+            rateTypeId = this.rateType.getValue();
+        }
 
-//            this.rateType = newValue;
+        if (command.isChangeInIntegerParameterNamed(ExchangeRateApiConstants.typeParamName, rateTypeId)) {
+            final Integer newValue = command.integerValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
+            actualChanges.put(ExchangeRateApiConstants.typeParamName, newValue);
+            this.rateType = ExchangeRateType.fromInt(newValue);
         }
 
         if (command.isChangeInStringParameterNamed(ExchangeRateApiConstants.currencyParamName, this.currency)) {
@@ -103,7 +106,7 @@ public class ExchangeRate extends AbstractPersistable<Long> {
         this.date = date;
     }
 
-    public void setRateType(CodeValue rateType) {
+    public void setRateType(ExchangeRateType rateType) {
         this.rateType = rateType;
     }
 

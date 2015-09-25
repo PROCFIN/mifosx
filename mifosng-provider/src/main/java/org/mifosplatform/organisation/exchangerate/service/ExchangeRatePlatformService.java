@@ -13,7 +13,5 @@ public interface ExchangeRatePlatformService {
 
     ExchangeRateData retrieveExchangeRate(Long exchangeRateId);
 
-//    Collection<ExchangeRateData> retrieveAllExchangeRatesForDropdown();
-
     Collection<ExchangeRateData> retrieveAllExchangeRates(String sqlSearch);
 }

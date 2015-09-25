@@ -5,6 +5,8 @@
  */
 package org.mifosplatform.organisation.exchangerate.domain;
 
+import org.joda.time.LocalDate;
+import org.mifosplatform.infrastructure.codes.domain.CodeValue;
 import org.mifosplatform.organisation.exchangerate.exception.ExchangeRateNotFoundException;
 import org.mifosplatform.organisation.staff.exception.StaffNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,13 @@ public class ExchangeRateRepositoryWrapper {
     public ExchangeRate findOneWithNotFoundDetection(final Long id) {
         final ExchangeRate exchangeRate = this.repository.findOne(id);
         if (exchangeRate == null) { throw new ExchangeRateNotFoundException(id); }
+        return exchangeRate;
+    }
+
+    public ExchangeRate findOneByCurrencyAndTypeWithNotFoundDetection(final String currencyCode, int rateType) {
+        LocalDate localDate = new LocalDate().plusDays(1);
+        final ExchangeRate exchangeRate = this.repository.findByCurrencyAndTypeAndDateBefore(currencyCode, rateType, localDate.toDate());
+        if (exchangeRate == null) { throw new ExchangeRateNotFoundException(currencyCode, rateType); }
         return exchangeRate;
     }
 

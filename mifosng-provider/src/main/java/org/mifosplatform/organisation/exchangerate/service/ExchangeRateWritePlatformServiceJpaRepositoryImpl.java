@@ -48,11 +48,8 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
     public CommandProcessingResult createExchangeRate(final JsonCommand command) {
 
         try {
-            final Long typeId = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
-
             this.fromApiJsonDeserializer.validateForCreate(command.json());
-            CodeValue rateType = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME, typeId);
-            final ExchangeRate exchangeRate = ExchangeRate.fromJson(command, rateType);
+            final ExchangeRate exchangeRate = ExchangeRate.fromJson(command);
 
             this.exchangeRateRepository.save(exchangeRate);
 
@@ -79,15 +76,6 @@ public class ExchangeRateWritePlatformServiceJpaRepositoryImpl implements Exchan
             }
 
             final Map<String, Object> changesOnly = exchangeRateForUpdate.update(command);
-
-            if (changesOnly.containsKey(ExchangeRateApiConstants.typeParamName)) {
-                final Long typeIdLongValue = command.longValueOfParameterNamed(ExchangeRateApiConstants.typeParamName);
-                CodeValue rateType = null;
-                if (typeIdLongValue != null) {
-                    rateType = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(ExchangeRateApiConstants.TYPE_OPTION_CODE_NAME, typeIdLongValue);
-                }
-                exchangeRateForUpdate.setRateType(rateType);
-            }
 
             if (!changesOnly.isEmpty()) {
                 this.exchangeRateRepository.saveAndFlush(exchangeRateForUpdate);

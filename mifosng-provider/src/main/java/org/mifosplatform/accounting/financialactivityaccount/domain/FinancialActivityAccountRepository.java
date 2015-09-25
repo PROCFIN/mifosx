@@ -16,4 +16,6 @@ public interface FinancialActivityAccountRepository extends JpaRepository<Financ
     @Query("from FinancialActivityAccount faa where faa.financialActivityType = :financialActivityType")
     FinancialActivityAccount findByFinancialActivityType(@Param("financialActivityType") int financialAccountType);
 
+    @Query("from FinancialActivityAccount faa where faa.financialActivityType = :financialActivityType and currency = :currency")
+    FinancialActivityAccount findByFinancialActivityTypeAndCurrency(@Param("financialActivityType") int financialAccountType, @Param("currency") String currency);
 }

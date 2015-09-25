@@ -15,6 +15,7 @@ import org.mifosplatform.infrastructure.core.exception.InvalidJsonException;
 import org.mifosplatform.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.mifosplatform.infrastructure.core.serialization.FromJsonHelper;
 import org.mifosplatform.organisation.exchangerate.api.ExchangeRateApiConstants;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +50,10 @@ public final class ExchangeRateCommandFromApiJsonDeserializer {
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         final Long typeId = this.fromApiJsonHelper.extractLongNamed(ExchangeRateApiConstants.typeParamName, element);
-        baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull().positiveAmount();
+        baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull()
+                .isOneOfTheseValues(ExchangeRateType.BUYING.getValue().longValue(),
+                        ExchangeRateType.SELLING.getValue().longValue(),
+                        ExchangeRateType.INTERMEDIARY.getValue().longValue());
 
         final String currency = this.fromApiJsonHelper.extractStringNamed(ExchangeRateApiConstants.currencyParamName, element);
         baseDataValidator.reset().parameter(ExchangeRateApiConstants.currencyParamName).value(currency).notBlank().notExceedingLengthOf(3);
@@ -89,7 +93,10 @@ public final class ExchangeRateCommandFromApiJsonDeserializer {
 
         if (this.fromApiJsonHelper.parameterExists(ExchangeRateApiConstants.typeParamName, element)) {
             final Long typeId = this.fromApiJsonHelper.extractLongNamed(ExchangeRateApiConstants.typeParamName, element);
-            baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull().positiveAmount();
+            baseDataValidator.reset().parameter(ExchangeRateApiConstants.typeParamName).value(typeId).notNull()
+                    .isOneOfTheseValues(ExchangeRateType.BUYING.getValue().longValue(),
+                            ExchangeRateType.SELLING.getValue().longValue(),
+                            ExchangeRateType.INTERMEDIARY.getValue().longValue());
         }
 
         if (this.fromApiJsonHelper.parameterExists(ExchangeRateApiConstants.currencyParamName, element)) {

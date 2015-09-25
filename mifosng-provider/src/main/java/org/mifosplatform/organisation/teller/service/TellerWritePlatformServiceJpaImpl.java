@@ -5,9 +5,6 @@
  */
 package org.mifosplatform.organisation.teller.service;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.mifosplatform.accounting.common.AccountingConstants.FINANCIAL_ACTIVITY;
 import org.mifosplatform.accounting.financialactivityaccount.domain.FinancialActivityAccount;
 import org.mifosplatform.accounting.financialactivityaccount.domain.FinancialActivityAccountRepositoryWrapper;
@@ -21,20 +18,16 @@ import org.mifosplatform.infrastructure.core.data.CommandProcessingResultBuilder
 import org.mifosplatform.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.mifosplatform.infrastructure.security.exception.NoAuthorizationException;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRate;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateRepositoryWrapper;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.mifosplatform.organisation.office.domain.Office;
 import org.mifosplatform.organisation.office.domain.OfficeRepository;
 import org.mifosplatform.organisation.office.exception.OfficeNotFoundException;
 import org.mifosplatform.organisation.staff.domain.Staff;
 import org.mifosplatform.organisation.staff.domain.StaffRepository;
 import org.mifosplatform.organisation.staff.exception.StaffNotFoundException;
-import org.mifosplatform.organisation.teller.domain.Cashier;
-import org.mifosplatform.organisation.teller.domain.CashierRepository;
-import org.mifosplatform.organisation.teller.domain.CashierTransaction;
-import org.mifosplatform.organisation.teller.domain.CashierTransactionRepository;
-import org.mifosplatform.organisation.teller.domain.CashierTxnType;
-import org.mifosplatform.organisation.teller.domain.Teller;
-import org.mifosplatform.organisation.teller.domain.TellerRepository;
-import org.mifosplatform.organisation.teller.domain.TellerRepositoryWrapper;
+import org.mifosplatform.organisation.teller.domain.*;
 import org.mifosplatform.organisation.teller.exception.CashierExistForTellerException;
 import org.mifosplatform.organisation.teller.exception.CashierNotFoundException;
 import org.mifosplatform.organisation.teller.exception.TellerNotFoundException;
@@ -46,6 +39,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformService {
@@ -62,14 +58,20 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
     private final CashierTransactionRepository cashierTxnRepository;
     private final JournalEntryRepository glJournalEntryRepository;
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
+    private final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper;
 
     @Autowired
     public TellerWritePlatformServiceJpaImpl(final PlatformSecurityContext context,
-            final TellerCommandFromApiJsonDeserializer fromApiJsonDeserializer, final TellerRepository tellerRepository,
-            final TellerRepositoryWrapper tellerRepositoryWrapper, final OfficeRepository officeRepository,
-            final StaffRepository staffRepository, CashierRepository cashierRepository, CashierTransactionRepository cashierTxnRepository,
-            JournalEntryRepository glJournalEntryRepository,
-            FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper) {
+                                             final TellerCommandFromApiJsonDeserializer fromApiJsonDeserializer,
+                                             final TellerRepository tellerRepository,
+                                             final TellerRepositoryWrapper tellerRepositoryWrapper,
+                                             final OfficeRepository officeRepository,
+                                             final StaffRepository staffRepository,
+                                             final CashierRepository cashierRepository,
+                                             final CashierTransactionRepository cashierTxnRepository,
+                                             final JournalEntryRepository glJournalEntryRepository,
+                                             final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper,
+                                             final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.tellerRepository = tellerRepository;
@@ -80,6 +82,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
         this.cashierTxnRepository = cashierTxnRepository;
         this.glJournalEntryRepository = glJournalEntryRepository;
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
+        this.exchangeRateRepositoryWrapper = exchangeRateRepositoryWrapper;
     }
 
     @Override
@@ -95,7 +98,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             // final Office parent =
             // validateUserPriviledgeOnOfficeAndRetrieve(currentUser, officeId);
             final Office tellerOffice = this.officeRepository.findOne(officeId);
-            if (tellerOffice == null) { throw new OfficeNotFoundException(officeId); }
+            if (tellerOffice == null) {
+                throw new OfficeNotFoundException(officeId);
+            }
 
             final Teller teller = Teller.fromJson(tellerOffice, command);
 
@@ -120,7 +125,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
 
             final Long officeId = command.longValueOfParameterNamed("officeId");
             final Office tellerOffice = this.officeRepository.findOne(officeId);
-            if (tellerOffice == null) { throw new OfficeNotFoundException(officeId); }
+            if (tellerOffice == null) {
+                throw new OfficeNotFoundException(officeId);
+            }
 
             final AppUser currentUser = this.context.authenticatedUser();
 
@@ -154,13 +161,17 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
 
         final Long userOfficeId = currentUser.getOffice().getId();
         final Office userOffice = this.officeRepository.findOne(userOfficeId);
-        if (userOffice == null) { throw new OfficeNotFoundException(userOfficeId); }
+        if (userOffice == null) {
+            throw new OfficeNotFoundException(userOfficeId);
+        }
 
         final Teller tellerToReturn = this.tellerRepository.findOne(tellerId);
         if (tellerToReturn != null) {
             final Long tellerOfficeId = tellerToReturn.officeId();
-            if (userOffice.doesNotHaveAnOfficeInHierarchyWithId(tellerOfficeId)) { throw new NoAuthorizationException(
-                    "User does not have sufficient priviledges to act on the provided office."); }
+            if (userOffice.doesNotHaveAnOfficeInHierarchyWithId(tellerOfficeId)) {
+                throw new NoAuthorizationException(
+                        "User does not have sufficient priviledges to act on the provided office.");
+            }
         } else {
             throw new TellerNotFoundException(tellerId);
         }
@@ -177,8 +188,10 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
         Set<Cashier> isTellerIdPresentInCashier = teller.getCashiers();
 
         for (final Cashier tellerIdInCashier : isTellerIdPresentInCashier) {
-            if (tellerIdInCashier.getTeller().getId().toString().equalsIgnoreCase(tellerId.toString())) { throw new CashierExistForTellerException(
-                    tellerId); }
+            if (tellerIdInCashier.getTeller().getId().toString().equalsIgnoreCase(tellerId.toString())) {
+                throw new CashierExistForTellerException(
+                        tellerId);
+            }
 
         }
         tellerRepository.delete(teller);
@@ -217,7 +230,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             String startTime = " ";
             String endTime = " ";
             final Teller teller = this.tellerRepository.findOne(tellerId);
-            if (teller == null) { throw new TellerNotFoundException(tellerId); }
+            if (teller == null) {
+                throw new TellerNotFoundException(tellerId);
+            }
             final Office tellerOffice = teller.getOffice();
 
             final Long staffId = command.longValueOfParameterNamed("staffId");
@@ -225,7 +240,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             this.fromApiJsonDeserializer.validateForAllocateCashier(command.json());
 
             final Staff staff = this.staffRepository.findOne(staffId);
-            if (staff == null) { throw new StaffNotFoundException(staffId); }
+            if (staff == null) {
+                throw new StaffNotFoundException(staffId);
+            }
             final Boolean isFullDay = command.booleanObjectValueOfParameterNamed("isFullDay");
             if (!isFullDay) {
                 hourStartTime = command.longValueOfParameterNamed("hourStartTime");
@@ -270,7 +287,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
 
             final Long staffId = command.longValueOfParameterNamed("staffId");
             final Staff staff = this.staffRepository.findOne(staffId);
-            if (staff == null) { throw new StaffNotFoundException(staffId); }
+            if (staff == null) {
+                throw new StaffNotFoundException(staffId);
+            }
 
             final Cashier cashier = validateUserPriviledgeOnCashierAndRetrieve(currentUser, tellerId, cashierId);
 
@@ -333,19 +352,19 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
     @Override
     public CommandProcessingResult allocateCashToCashier(final Long cashierId, JsonCommand command) {
         return doTransactionForCashier(cashierId, CashierTxnType.ALLOCATE, command); // For
-                                                                                     // fund
-                                                                                     // allocation
-                                                                                     // to
-                                                                                     // cashier
+        // fund
+        // allocation
+        // to
+        // cashier
     }
 
     @Override
     public CommandProcessingResult settleCashFromCashier(final Long cashierId, JsonCommand command) {
         return doTransactionForCashier(cashierId, CashierTxnType.SETTLE, command); // For
-                                                                                   // fund
-                                                                                   // settlement
-                                                                                   // from
-                                                                                   // cashier
+        // fund
+        // settlement
+        // from
+        // cashier
     }
 
     private CommandProcessingResult doTransactionForCashier(final Long cashierId, final CashierTxnType txnType, JsonCommand command) {
@@ -353,7 +372,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final AppUser currentUser = this.context.authenticatedUser();
 
             final Cashier cashier = this.cashierRepository.findOne(cashierId);
-            if (cashier == null) { throw new CashierNotFoundException(cashierId); }
+            if (cashier == null) {
+                throw new CashierNotFoundException(cashierId);
+            }
 
             this.fromApiJsonDeserializer.validateForCashTxnForCashier(command.json());
 
@@ -389,9 +410,9 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
 
             // Pass the journal entries
             FinancialActivityAccount mainVaultFinancialActivityAccount = this.financialActivityAccountRepositoryWrapper
-                    .findByFinancialActivityTypeWithNotFoundDetection(FINANCIAL_ACTIVITY.CASH_AT_MAINVAULT.getValue());
+                    .findByFinancialActivityTypeAndCurrencyWithNotFoundDetection(FINANCIAL_ACTIVITY.CASH_AT_MAINVAULT.getValue(), cashierTxn.getCurrencyCode());
             FinancialActivityAccount tellerCashFinancialActivityAccount = this.financialActivityAccountRepositoryWrapper
-                    .findByFinancialActivityTypeWithNotFoundDetection(FINANCIAL_ACTIVITY.CASH_AT_TELLER.getValue());
+                    .findByFinancialActivityTypeAndCurrencyWithNotFoundDetection(FINANCIAL_ACTIVITY.CASH_AT_TELLER.getValue(), cashierTxn.getCurrencyCode());
             GLAccount creditAccount = null;
             GLAccount debitAccount = null;
             if (txnType.equals(CashierTxnType.ALLOCATE)) {
@@ -408,18 +429,16 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final String uniqueVal = String.valueOf(time) + currentUser.getId() + cashierOffice.getId();
             final String transactionId = Long.toHexString(Long.parseLong(uniqueVal));
 
-            final JournalEntry debitJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment
-                                                                                               // detail
-                    debitAccount, "USD", // FIXME: Take currency code from the
-                                         // transaction
+            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(cashierTxn.getCurrencyCode(), ExchangeRateType.INTERMEDIARY.getValue());
+
+            final JournalEntry debitJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment detail
+                    debitAccount, cashierTxn.getCurrencyCode(), exchangeRate,
                     transactionId, false, // manual entry
                     cashierTxn.getTxnDate(), JournalEntryType.DEBIT, cashierTxn.getTxnAmount(), cashierTxn.getTxnNote(), // Description
                     null, null, null, // entity Type, entityId, reference number
                     null, null); // Loan and Savings Txn
-            final JournalEntry creditJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment
-                                                                                                // detail
-                    creditAccount, "USD", // FIXME: Take currency code from the
-                                          // transaction
+            final JournalEntry creditJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment detail
+                    creditAccount, cashierTxn.getCurrencyCode(), exchangeRate,
                     transactionId, false, // manual entry
                     cashierTxn.getTxnDate(), JournalEntryType.CREDIT, cashierTxn.getTxnAmount(), cashierTxn.getTxnNote(), // Description
                     null, null, null, // entity Type, entityId, reference number

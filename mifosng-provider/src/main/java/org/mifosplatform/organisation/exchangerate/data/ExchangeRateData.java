@@ -7,6 +7,8 @@ package org.mifosplatform.organisation.exchangerate.data;
 
 import org.joda.time.LocalDate;
 import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.core.data.EnumOptionData;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 
 import java.math.BigDecimal;
@@ -19,23 +21,24 @@ public class ExchangeRateData {
 
     private final Long id;
     private final LocalDate date;
-    private final CodeValueData rateType;
+    private final EnumOptionData rateType;
     private final String currency;
     private final BigDecimal amount;
 
     @SuppressWarnings("unused")
     private final Collection<CurrencyData> allowedCurrencies;
-    private final Collection<CodeValueData> allowedExchangeRateTypeOptions;
+    private final Collection<EnumOptionData> allowedExchangeRateTypeOptions;
 
-    public ExchangeRateData(Long id, LocalDate date, CodeValueData rateType, String currency, BigDecimal amount) {
+    public ExchangeRateData(Long id, LocalDate date, EnumOptionData rateType, String currency, BigDecimal amount) {
         this(id, date, rateType, currency, amount, null, null);
     }
 
-    public ExchangeRateData(ExchangeRateData exchangeRateData, Collection<CurrencyData> allowedCurrencies, Collection<CodeValueData> allowedExchangeRateTypeOptions) {
+    public ExchangeRateData(ExchangeRateData exchangeRateData, Collection<CurrencyData> allowedCurrencies, Collection<EnumOptionData> allowedExchangeRateTypeOptions) {
         this(exchangeRateData.id, exchangeRateData.date, exchangeRateData.rateType, exchangeRateData.currency, exchangeRateData.amount, allowedCurrencies, allowedExchangeRateTypeOptions);
     }
 
-    public ExchangeRateData(Long id, LocalDate date, CodeValueData rateType, String currency, BigDecimal amount, Collection<CurrencyData> allowedCurrencies, Collection<CodeValueData> allowedExchangeRateTypeOptions) {
+    public ExchangeRateData(Long id, LocalDate date, EnumOptionData rateType, String currency, BigDecimal amount,
+                            Collection<CurrencyData> allowedCurrencies, Collection<EnumOptionData> allowedExchangeRateTypeOptions) {
         this.id = id;
         this.date = date;
         this.rateType = rateType;
@@ -45,15 +48,18 @@ public class ExchangeRateData {
         this.allowedExchangeRateTypeOptions = allowedExchangeRateTypeOptions;
     }
 
-    public static ExchangeRateData templateData(final ExchangeRateData exchangeRateData, final Collection<CurrencyData> allowedCurrencies, Collection<CodeValueData> allowedExchangeRateTypeOptions) {
-        return new ExchangeRateData(exchangeRateData.id, exchangeRateData.date, exchangeRateData.rateType, exchangeRateData.currency, exchangeRateData.amount, allowedCurrencies, allowedExchangeRateTypeOptions);
+    public static ExchangeRateData templateData(final ExchangeRateData exchangeRateData,
+                                                final Collection<CurrencyData> allowedCurrencies,
+                                                Collection<EnumOptionData> allowedExchangeRateTypeOptions) {
+        return new ExchangeRateData(exchangeRateData.id, exchangeRateData.date, exchangeRateData.rateType,
+                exchangeRateData.currency, exchangeRateData.amount, allowedCurrencies, allowedExchangeRateTypeOptions);
     }
 
     public static ExchangeRateData sensibleDefaultsForNewExchangeRateCreation() {
         return new ExchangeRateData(null, null, null, null, null);
     }
 
-    public static ExchangeRateData instance(Long id, LocalDate date, CodeValueData rateType, String currency, BigDecimal amount) {
+    public static ExchangeRateData instance(Long id, LocalDate date, EnumOptionData rateType, String currency, BigDecimal amount) {
         return new ExchangeRateData(id, date, rateType, currency, amount);
     }
 
@@ -65,7 +71,7 @@ public class ExchangeRateData {
         return date;
     }
 
-    public CodeValueData getType() {
+    public EnumOptionData getType() {
         return rateType;
     }
 

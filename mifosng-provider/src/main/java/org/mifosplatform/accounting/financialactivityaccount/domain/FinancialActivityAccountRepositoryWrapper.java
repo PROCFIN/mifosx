@@ -39,6 +39,12 @@ public class FinancialActivityAccountRepositoryWrapper {
         return financialActivityAccount;
     }
 
+    public FinancialActivityAccount findByFinancialActivityTypeAndCurrencyWithNotFoundDetection(final int financialActivityType, final String currency) {
+        FinancialActivityAccount financialActivityAccount = this.repository.findByFinancialActivityTypeAndCurrency(financialActivityType, currency);
+        if (financialActivityAccount == null) { throw new FinancialActivityAccountNotFoundException(financialActivityType); }
+        return financialActivityAccount;
+    }
+
     public List<FinancialActivityAccount> findAll() {
         return this.repository.findAll();
     }

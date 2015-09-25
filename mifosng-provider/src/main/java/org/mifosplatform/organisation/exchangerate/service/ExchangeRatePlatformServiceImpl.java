@@ -7,12 +7,13 @@ package org.mifosplatform.organisation.exchangerate.service;
 
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDate;
-import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
 import org.mifosplatform.organisation.exchangerate.data.ExchangeRateData;
-import org.mifosplatform.organisation.staff.exception.StaffNotFoundException;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
+import org.mifosplatform.organisation.exchangerate.exception.ExchangeRateNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,9 +41,8 @@ public class ExchangeRatePlatformServiceImpl implements ExchangeRatePlatformServ
     private static final class ExchangeRateMapper implements RowMapper<ExchangeRateData> {
 
         public String schema() {
-            return " er.id as id, er.date as date, cv.id as typeId, cv.code_value as typeValue, er.currency as currency, er.amount as amount from m_exchange_rate er "
+            return " er.id as id, er.date as date, er.type as type, er.currency as currency, er.amount as amount from m_exchange_rate er "
                     + " left join m_organisation_currency oc on oc.code = er.currency"
-                    + " left join m_code_value cv on cv.id = er.type_cv_id"
                     + " left join m_currency c on c.code = er.currency";
         }
 
@@ -54,10 +54,7 @@ public class ExchangeRatePlatformServiceImpl implements ExchangeRatePlatformServ
             final String currency = rs.getString("currency");
             final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
             final BigDecimal amount = rs.getBigDecimal("amount");
-
-            final Long typeId = rs.getLong("typeId");
-            final String typeValue = rs.getString("typeValue");
-            final CodeValueData rateType = CodeValueData.instance(typeId, typeValue);
+            final EnumOptionData rateType = ExchangeRateType.exchangeRateType(ExchangeRateType.fromInt(rs.getInt("type")));
 
             return ExchangeRateData.instance(id, date, rateType, currency, amount);
         }
@@ -72,7 +69,7 @@ public class ExchangeRatePlatformServiceImpl implements ExchangeRatePlatformServ
 
             return this.jdbcTemplate.queryForObject(sql, rm, new Object[]{exchangeRateId});
         } catch (final EmptyResultDataAccessException e) {
-            throw new StaffNotFoundException(exchangeRateId);
+            throw new ExchangeRateNotFoundException(exchangeRateId);
         }
     }
 

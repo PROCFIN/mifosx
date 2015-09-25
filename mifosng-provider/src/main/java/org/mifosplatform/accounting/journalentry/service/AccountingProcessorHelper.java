@@ -38,6 +38,9 @@ import org.mifosplatform.accounting.producttoaccountmapping.domain.ProductToGLAc
 import org.mifosplatform.accounting.producttoaccountmapping.domain.ProductToGLAccountMappingRepository;
 import org.mifosplatform.accounting.producttoaccountmapping.exception.ProductToGLAccountMappingNotFoundException;
 import org.mifosplatform.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRate;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateRepositoryWrapper;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.office.domain.Office;
 import org.mifosplatform.organisation.office.domain.OfficeRepository;
@@ -66,14 +69,16 @@ public class AccountingProcessorHelper {
     private final LoanTransactionRepository loanTransactionRepository;
     private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
     private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
+    private final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper;
 
     @Autowired
     public AccountingProcessorHelper(final JournalEntryRepository glJournalEntryRepository,
-            final ProductToGLAccountMappingRepository accountMappingRepository, final GLClosureRepository closureRepository,
-            final OfficeRepository officeRepository, final LoanTransactionRepository loanTransactionRepository,
-            final SavingsAccountTransactionRepository savingsAccountTransactionRepository,
-            final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepository,
-            final AccountTransfersReadPlatformService accountTransfersReadPlatformService) {
+                                     final ProductToGLAccountMappingRepository accountMappingRepository, final GLClosureRepository closureRepository,
+                                     final OfficeRepository officeRepository, final LoanTransactionRepository loanTransactionRepository,
+                                     final SavingsAccountTransactionRepository savingsAccountTransactionRepository,
+                                     final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepository,
+                                     final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
+                                     final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper) {
         this.glJournalEntryRepository = glJournalEntryRepository;
         this.accountMappingRepository = accountMappingRepository;
         this.closureRepository = closureRepository;
@@ -82,6 +87,7 @@ public class AccountingProcessorHelper {
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.financialActivityAccountRepository = financialActivityAccountRepository;
         this.accountTransfersReadPlatformService = accountTransfersReadPlatformService;
+        this.exchangeRateRepositoryWrapper = exchangeRateRepositoryWrapper;
     }
 
     public LoanDTO populateLoanDtoFromMap(final Map<String, Object> accountingBridgeData, final boolean cashBasedAccountingEnabled,
@@ -565,7 +571,8 @@ public class AccountingProcessorHelper {
             loanTransaction = this.loanTransactionRepository.findOne(id);
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
-        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.CREDIT, amount, null, PortfolioProductType.LOAN.getValue(), loanId, null,
                 loanTransaction, savingsAccountTransaction);
         this.glJournalEntryRepository.saveAndFlush(journalEntry);
@@ -583,7 +590,8 @@ public class AccountingProcessorHelper {
             savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
-        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.CREDIT, amount, null, PortfolioProductType.SAVING.getValue(), savingsId,
                 null, loanTransaction, savingsAccountTransaction);
         this.glJournalEntryRepository.saveAndFlush(journalEntry);
@@ -601,7 +609,8 @@ public class AccountingProcessorHelper {
             loanTransaction = this.loanTransactionRepository.findOne(id);
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
-        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.DEBIT, amount, null, PortfolioProductType.LOAN.getValue(), loanId, null,
                 loanTransaction, savingsAccountTransaction);
         this.glJournalEntryRepository.saveAndFlush(journalEntry);
@@ -619,7 +628,8 @@ public class AccountingProcessorHelper {
             savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
-        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.DEBIT, amount, null, PortfolioProductType.SAVING.getValue(), savingsId,
                 null, loanTransaction, savingsAccountTransaction);
         this.glJournalEntryRepository.saveAndFlush(journalEntry);
