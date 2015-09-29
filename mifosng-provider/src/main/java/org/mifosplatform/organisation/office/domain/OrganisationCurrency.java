@@ -9,6 +9,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
@@ -36,6 +37,9 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
     @Column(name = "display_symbol", nullable = true, length = 10)
     private final String displaySymbol;
 
+    @Column(name = "is_home_currency", nullable = true)
+    private final Boolean isHomeCurrency;
+
     protected OrganisationCurrency() {
         this.code = null;
         this.name = null;
@@ -43,18 +47,20 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
         this.inMultiplesOf = null;
         this.nameCode = null;
         this.displaySymbol = null;
+        this.isHomeCurrency = null;
     }
 
     public OrganisationCurrency(final String code, final String name, final int decimalPlaces, final Integer inMultiplesOf,
-            final String nameCode, final String displaySymbol) {
+            final String nameCode, final String displaySymbol, final Boolean isHomeCurrency) {
         this.code = code;
         this.name = name;
         this.decimalPlaces = decimalPlaces;
         this.inMultiplesOf = inMultiplesOf;
         this.nameCode = nameCode;
         this.displaySymbol = displaySymbol;
+        this.isHomeCurrency = isHomeCurrency;
     }
-    
+
     public final String getCode() {
     	return code;
     }

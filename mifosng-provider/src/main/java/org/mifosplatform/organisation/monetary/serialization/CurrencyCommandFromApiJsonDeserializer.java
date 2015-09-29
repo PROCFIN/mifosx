@@ -31,7 +31,7 @@ public final class CurrencyCommandFromApiJsonDeserializer {
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("currencies"));
+    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("currencies", "homeCurrencyCode"));
 
     private final FromJsonHelper fromApiJsonHelper;
 

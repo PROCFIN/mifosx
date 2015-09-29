@@ -91,7 +91,7 @@ public class ApplicationCurrency extends AbstractPersistable<Long> {
         return new CurrencyData(this.code, this.name, digitsAfterDecimalSupported, inMultiplesOf, this.displaySymbol, this.nameCode);
     }
 
-    public OrganisationCurrency toOrganisationCurrency() {
-        return new OrganisationCurrency(this.code, this.name, this.decimalPlaces, this.inMultiplesOf, this.nameCode, this.displaySymbol);
+    public OrganisationCurrency toOrganisationCurrency(final Boolean isHomeCurrency) {
+        return new OrganisationCurrency(this.code, this.name, this.decimalPlaces, this.inMultiplesOf, this.nameCode, this.displaySymbol, isHomeCurrency);
     }
 }

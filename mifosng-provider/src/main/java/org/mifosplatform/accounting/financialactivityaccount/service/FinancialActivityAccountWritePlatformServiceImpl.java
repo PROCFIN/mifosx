@@ -5,9 +5,6 @@
  */
 package org.mifosplatform.accounting.financialactivityaccount.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.mifosplatform.accounting.common.AccountingConstants.FINANCIAL_ACTIVITY;
 import org.mifosplatform.accounting.financialactivityaccount.api.FinancialActivityAccountsJsonInputParams;
 import org.mifosplatform.accounting.financialactivityaccount.domain.FinancialActivityAccount;
@@ -26,6 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class FinancialActivityAccountWritePlatformServiceImpl implements FinancialActivityAccountWritePlatformService {
@@ -53,8 +53,9 @@ public class FinancialActivityAccountWritePlatformServiceImpl implements Financi
             final Integer financialActivityId = command
                     .integerValueSansLocaleOfParameterNamed(FinancialActivityAccountsJsonInputParams.FINANCIAL_ACTIVITY_ID.getValue());
             final Long accountId = command.longValueOfParameterNamed(FinancialActivityAccountsJsonInputParams.GL_ACCOUNT_ID.getValue());
+            final String currency = command.stringValueOfParameterNamed(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue());
             final GLAccount glAccount = glAccountRepositoryWrapper.findOneWithNotFoundDetection(accountId);
-            FinancialActivityAccount financialActivityAccount = FinancialActivityAccount.createNew(glAccount, financialActivityId);
+            FinancialActivityAccount financialActivityAccount = FinancialActivityAccount.createNew(glAccount, financialActivityId, currency);
 
             validateFinancialActivityAndAccountMapping(financialActivityAccount);
             this.financialActivityAccountRepository.save(financialActivityAccount);
@@ -71,12 +72,13 @@ public class FinancialActivityAccountWritePlatformServiceImpl implements Financi
     /**
      * Validate that the GL Account is appropriate for the particular Financial
      * Activity Type
-     **/
+     */
     private void validateFinancialActivityAndAccountMapping(FinancialActivityAccount financialActivityAccount) {
         FINANCIAL_ACTIVITY financialActivity = FINANCIAL_ACTIVITY.fromInt(financialActivityAccount.getFinancialActivityType());
         GLAccount glAccount = financialActivityAccount.getGlAccount();
-        if (!financialActivity.getMappedGLAccountType().getValue().equals(glAccount.getType())) { throw new FinancialActivityAccountInvalidException(
-                financialActivity, glAccount); }
+        if (!financialActivity.getMappedGLAccountType().getValue().equals(glAccount.getType())) {
+            throw new FinancialActivityAccountInvalidException(financialActivity, glAccount);
+        }
     }
 
     @Override
@@ -97,6 +99,10 @@ public class FinancialActivityAccountWritePlatformServiceImpl implements Financi
                 final Integer financialActivityId = command
                         .integerValueSansLocaleOfParameterNamed(FinancialActivityAccountsJsonInputParams.FINANCIAL_ACTIVITY_ID.getValue());
                 financialActivityAccount.updateFinancialActivityType(financialActivityId);
+            }
+            if (changes.containsKey(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue())) {
+                final String currency = command.stringValueOfParameterNamed(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue());
+                financialActivityAccount.updateCurrency(currency);
             }
 
             if (!changes.isEmpty()) {
@@ -144,6 +150,7 @@ public class FinancialActivityAccountWritePlatformServiceImpl implements Financi
 
         Long existingGLAccountId = financialActivityAccount.getGlAccount().getId();
         Integer financialActivityType = financialActivityAccount.getFinancialActivityType();
+        String currency = financialActivityAccount.getCurrency();
 
         // is the account Id changed?
         if (command.isChangeInLongParameterNamed(FinancialActivityAccountsJsonInputParams.GL_ACCOUNT_ID.getValue(), existingGLAccountId)) {
@@ -157,6 +164,11 @@ public class FinancialActivityAccountWritePlatformServiceImpl implements Financi
             final Integer newValue = command
                     .integerValueSansLocaleOfParameterNamed(FinancialActivityAccountsJsonInputParams.FINANCIAL_ACTIVITY_ID.getValue());
             changes.put(FinancialActivityAccountsJsonInputParams.FINANCIAL_ACTIVITY_ID.getValue(), newValue);
+        }
+
+        if (command.isChangeInStringParameterNamed(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue(), currency)) {
+            final String newValue = command.stringValueOfParameterNamed(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue());
+            changes.put(FinancialActivityAccountsJsonInputParams.CURRENCY.getValue(), newValue);
         }
         return changes;
     }

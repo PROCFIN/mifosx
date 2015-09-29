@@ -13,5 +13,7 @@ public interface CurrencyReadPlatformService {
 
     Collection<CurrencyData> retrieveAllowedCurrencies();
 
+    Collection<CurrencyData> retrieveAllowedCurrenciesExceptHomeCurrency();
+
     Collection<CurrencyData> retrieveAllPlatformCurrencies();
 }

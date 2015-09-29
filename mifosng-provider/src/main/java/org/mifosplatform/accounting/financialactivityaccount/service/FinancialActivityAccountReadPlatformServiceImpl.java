@@ -7,6 +7,7 @@ package org.mifosplatform.accounting.financialactivityaccount.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,8 @@ import org.mifosplatform.accounting.financialactivityaccount.exception.Financial
 import org.mifosplatform.accounting.glaccount.data.GLAccountData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
+import org.mifosplatform.organisation.monetary.data.CurrencyData;
+import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,10 +33,13 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
     private final JdbcTemplate jdbcTemplate;
     private final FinancialActivityAccountMapper financialActivityAccountMapper;
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
+    public final CurrencyReadPlatformService currencyReadPlatformService;
 
     @Autowired
     public FinancialActivityAccountReadPlatformServiceImpl(final RoutingDataSource dataSource,
-            final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService) {
+                                                           final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
+                                                           final CurrencyReadPlatformService currencyReadPlatformService) {
+        this.currencyReadPlatformService = currencyReadPlatformService;
         financialActivityAccountMapper = new FinancialActivityAccountMapper();
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.accountingDropdownReadPlatformService = accountingDropdownReadPlatformService;
@@ -64,6 +70,8 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
         final Map<String, List<GLAccountData>> accountOptions = this.accountingDropdownReadPlatformService.retrieveAccountMappingOptions();
         financialActivityAccountData.setAccountingMappingOptions(accountOptions);
         financialActivityAccountData.setFinancialActivityOptions(FINANCIAL_ACTIVITY.getAllFinancialActivities());
+        final Collection<CurrencyData> currencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrencies();
+        financialActivityAccountData.setCurrencyOptions(currencyOptions);
         return financialActivityAccountData;
     }
 
@@ -79,7 +87,7 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
 
         public FinancialActivityAccountMapper() {
             StringBuilder sb = new StringBuilder(300);
-            sb.append(" faa.id as id, faa.financial_activity_type as financialActivityId, glaccount.id as glAccountId,glaccount.name as glAccountName,glaccount.gl_code as glCode  ");
+            sb.append(" faa.id as id, faa.financial_activity_type as financialActivityId, glaccount.id as glAccountId,glaccount.name as glAccountName,glaccount.gl_code as glCode, faa.currency as currency ");
             sb.append(" from acc_gl_financial_activity_account faa ");
             sb.append(" join acc_gl_account glaccount on glaccount.id = faa.gl_account_id");
             sql = sb.toString();
@@ -96,12 +104,12 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
             final Integer financialActivityId = JdbcSupport.getInteger(rs, "financialActivityId");
             final String glAccountName = rs.getString("glAccountName");
             final String glCode = rs.getString("glCode");
+            final String currency = rs.getString("currency");
 
             final GLAccountData glAccountData = new GLAccountData(glAccountId, glAccountName, glCode);
             final FinancialActivityData financialActivityData = FINANCIAL_ACTIVITY.toFinancialActivityData(financialActivityId);
 
-            final FinancialActivityAccountData financialActivityAccountData = new FinancialActivityAccountData(id, financialActivityData,
-                    glAccountData);
+            final FinancialActivityAccountData financialActivityAccountData = new FinancialActivityAccountData(id, financialActivityData, glAccountData, currency);
             return financialActivityAccountData;
         }
     }

@@ -12,7 +12,7 @@ import java.util.Set;
 public class FinancialActivityAccountsConstants {
 
     public static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "financialActivityData",
-            "glAccountData", "glAccountOptions", "financialActivityOptions"));
+            "glAccountData", "currency", "glAccountOptions", "financialActivityOptions", "currencyOptions"));
 
     public static final String resourceNameForPermission = "FINANCIALACTIVITYACCOUNT";
 }

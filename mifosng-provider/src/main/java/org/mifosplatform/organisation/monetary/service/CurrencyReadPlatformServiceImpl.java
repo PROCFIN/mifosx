@@ -24,12 +24,14 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final CurrencyMapper currencyRowMapper;
+    private final OrganizationCurrencyMapper organizationCurrencyMapper;
 
     @Autowired
     public CurrencyReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.currencyRowMapper = new CurrencyMapper();
+        this.organizationCurrencyMapper = new OrganizationCurrencyMapper();
     }
 
     @Override
@@ -37,9 +39,19 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
 
         this.context.authenticatedUser();
 
-        final String sql = "select " + this.currencyRowMapper.schema() + " from m_organisation_currency c order by c.name";
+        final String sql = "select " + this.organizationCurrencyMapper.schema() + " from m_organisation_currency c order by c.name";
 
-        return this.jdbcTemplate.query(sql, this.currencyRowMapper, new Object[] {});
+        return this.jdbcTemplate.query(sql, this.organizationCurrencyMapper, new Object[] {});
+    }
+
+    @Override
+    public Collection<CurrencyData> retrieveAllowedCurrenciesExceptHomeCurrency() {
+
+        this.context.authenticatedUser();
+
+        final String sql = "select " + this.organizationCurrencyMapper.schema() + " from m_organisation_currency c where c.is_home_currency=false order by c.name";
+
+        return this.jdbcTemplate.query(sql, this.organizationCurrencyMapper, new Object[] {});
     }
 
     @Override
@@ -67,6 +79,26 @@ public class CurrencyReadPlatformServiceImpl implements CurrencyReadPlatformServ
 
         public String schema() {
             return " c.code as code, c.name as name, c.decimal_places as decimalPlaces,c.currency_multiplesof as inMultiplesOf, c.display_symbol as displaySymbol, c.internationalized_name_code as nameCode ";
+        }
+    }
+    private static final class OrganizationCurrencyMapper implements RowMapper<CurrencyData> {
+
+        @Override
+        public CurrencyData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final String code = rs.getString("code");
+            final String name = rs.getString("name");
+            final int decimalPlaces = JdbcSupport.getInteger(rs, "decimalPlaces");
+            final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+            final String displaySymbol = rs.getString("displaySymbol");
+            final String nameCode = rs.getString("nameCode");
+            final Boolean isHomeCurrency = rs.getBoolean("isHomeCurrency");
+
+            return new CurrencyData(code, name, decimalPlaces, inMultiplesOf, displaySymbol, nameCode, isHomeCurrency);
+        }
+
+        public String schema() {
+            return " c.code as code, c.name as name, c.decimal_places as decimalPlaces,c.currency_multiplesof as inMultiplesOf, c.display_symbol as displaySymbol, c.internationalized_name_code as nameCode, c.is_home_currency as isHomeCurrency";
         }
     }
 }
