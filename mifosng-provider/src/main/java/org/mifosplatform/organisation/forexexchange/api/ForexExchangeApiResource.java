@@ -18,6 +18,12 @@ import org.mifosplatform.organisation.forexexchange.data.ForexExchangeData;
 import org.mifosplatform.organisation.forexexchange.service.ForexExchangePlatformService;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
+import org.mifosplatform.organisation.staff.data.StaffData;
+import org.mifosplatform.organisation.staff.service.StaffReadPlatformService;
+import org.mifosplatform.organisation.teller.data.CashierData;
+import org.mifosplatform.organisation.teller.data.CashierTransactionsWithSummaryData;
+import org.mifosplatform.organisation.teller.data.TellerData;
+import org.mifosplatform.organisation.teller.service.TellerManagementReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -27,6 +33,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.util.Collection;
+import java.util.Date;
 
 @Path("/forexexchange")
 @Component
@@ -37,6 +44,8 @@ public class ForexExchangeApiResource {
 
     private final PlatformSecurityContext context;
     private final ForexExchangePlatformService readPlatformService;
+    private final TellerManagementReadPlatformService tellerManagementReadPlatformService;
+    private final StaffReadPlatformService staffReadPlatformService;
     private final DefaultToApiJsonSerializer<ForexExchangeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
@@ -45,6 +54,8 @@ public class ForexExchangeApiResource {
 
     @Autowired
     public ForexExchangeApiResource(final PlatformSecurityContext context, final ForexExchangePlatformService readPlatformService,
+                                    final TellerManagementReadPlatformService tellerManagementReadPlatformService,
+                                    final StaffReadPlatformService staffReadPlatformService,
                                     final DefaultToApiJsonSerializer<ForexExchangeData> toApiJsonSerializer,
                                     final ApiRequestParameterHelper apiRequestParameterHelper,
                                     final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
@@ -52,6 +63,8 @@ public class ForexExchangeApiResource {
                                     final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.readPlatformService = readPlatformService;
+        this.tellerManagementReadPlatformService = tellerManagementReadPlatformService;
+        this.staffReadPlatformService = staffReadPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
@@ -147,4 +160,22 @@ public class ForexExchangeApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
+    @GET
+    @Path("transactions")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getTransactionsWtihSummaryForCashier(@Context final UriInfo uriInfo, @QueryParam("tellerId") final Long tellerId,
+                                                       @QueryParam("cashierId") final Long cashierId, @QueryParam("currencyCode") final String currencyCode) {
+        final TellerData teller = this.tellerManagementReadPlatformService.findTeller(tellerId);
+        final CashierData cashier = this.tellerManagementReadPlatformService.findCashier(cashierId);
+        final StaffData staff = this.staffReadPlatformService.retrieveStaff(cashier.getStaffId());
+
+        final Date fromDate = null;
+        final Date toDate = null;
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final Collection<ForexExchangeData> forexExchangeDataCollection = this.readPlatformService.retrieveCashierTransactions(staff.getId(), currencyCode);
+
+        return this.toApiJsonSerializer.serialize(settings, forexExchangeDataCollection, ForexExchangeApiConstants.FOREX_EXCHANGE_RESPONSE_DATA_PARAMETERS);
+    }
+
 }

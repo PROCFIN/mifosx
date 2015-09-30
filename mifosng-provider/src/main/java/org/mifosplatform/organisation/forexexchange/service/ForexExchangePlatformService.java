@@ -15,4 +15,6 @@ public interface ForexExchangePlatformService {
     ForexExchangeData retrieveForexExchange(Long forexExchangeId);
 
     Collection<ForexExchangeData> retrieveAllForexExchanges(String sqlSearch);
+
+    Collection<ForexExchangeData> retrieveCashierTransactions(Long staffId, String currencyCode);
 }

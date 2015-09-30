@@ -55,6 +55,7 @@ public class ForexExchangePlatformServiceImpl implements ForexExchangePlatformSe
                     .append(" left join m_organisation_currency oct on oct.code = fe.currency_to_code")
                     .append(" left join m_exchange_rate er on er.id = fe.exchange_rate_id")
                     .append(" left join m_appuser au on au.id = fe.createdby_id")
+                    .append(" left join m_staff s on s.id = au.staff_id")
                     .append(" left join m_currency c on c.code = er.currency ");
             return sql.toString();
         }
@@ -121,7 +122,7 @@ public class ForexExchangePlatformServiceImpl implements ForexExchangePlatformSe
 
     @Override
     public Collection<ForexExchangeData> retrieveAllForexExchanges(final String sqlSearch) {
-        final String extraCriteria = getExchangeRateCriteria(sqlSearch);
+        final String extraCriteria = getExchangeRateCriteria(sqlSearch, null, null);
         final ForexExchangeMapper rm = new ForexExchangeMapper();
         String sql = "select " + rm.schema();
         if (StringUtils.isNotBlank(extraCriteria)) {
@@ -131,14 +132,31 @@ public class ForexExchangePlatformServiceImpl implements ForexExchangePlatformSe
         return this.jdbcTemplate.query(sql, rm, new Object[]{});
     }
 
-    private String getExchangeRateCriteria(final String sqlSearch) {
+    @Override
+    public Collection<ForexExchangeData> retrieveCashierTransactions(Long staffId, String currencyCode) {
+        final String extraCriteria = getExchangeRateCriteria(null, staffId, currencyCode);
+        final ForexExchangeMapper rm = new ForexExchangeMapper();
+        String sql = "select " + rm.schema();
+        if (StringUtils.isNotBlank(extraCriteria)) {
+            sql += " where " + extraCriteria;
+        }
+        sql = sql + " order by fe.created_date";
+        return this.jdbcTemplate.query(sql, rm, new Object[]{});
+    }
+
+    private String getExchangeRateCriteria(final String sqlSearch, final Long staffId, final String currencyCode) {
 
         final StringBuffer extraCriteria = new StringBuffer(200);
 
         if (sqlSearch != null) {
             extraCriteria.append(" and (").append(sqlSearch).append(")");
         }
-
+        if (staffId != null) {
+            extraCriteria.append(" and s.id = ").append(staffId);
+        }
+        if (currencyCode != null) {
+            extraCriteria.append(" and (ocf.code = '").append(currencyCode).append("' or oct.code = '").append(currencyCode).append("')");
+        }
         if (StringUtils.isNotBlank(extraCriteria.toString())) {
             extraCriteria.delete(0, 4);
         }
