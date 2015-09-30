@@ -41,7 +41,7 @@ public class ExchangeRateRepositoryWrapper {
         return exchangeRate;
     }
     public ExchangeRate findOneByCurrencyAndTypeBeforeDateWithNotFoundDetection(final String currencyCode, int rateTypeId, LocalDate localDate) {
-        final ExchangeRate exchangeRate = this.repository.findByCurrencyAndTypeAndDateBefore(currencyCode, rateTypeId, localDate.toDateTimeAtStartOfDay().plusDays(1).toDate());
+        final ExchangeRate exchangeRate = this.repository.findByCurrencyAndTypeAndDateBefore(currencyCode, rateTypeId, localDate.toDate());
         if (exchangeRate == null) { throw new ExchangeRateNotFoundException(currencyCode, ExchangeRateType.fromInt(rateTypeId), localDate); }
         return exchangeRate;
     }
