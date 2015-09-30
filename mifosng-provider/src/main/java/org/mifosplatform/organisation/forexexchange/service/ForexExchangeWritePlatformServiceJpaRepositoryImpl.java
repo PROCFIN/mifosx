@@ -5,6 +5,7 @@
  */
 package org.mifosplatform.organisation.forexexchange.service;
 
+import org.joda.time.LocalDate;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -72,15 +73,16 @@ public class ForexExchangeWritePlatformServiceJpaRepositoryImpl implements Forex
             final OrganisationCurrency currencyTo = this.organisationCurrencyRepositoryWrapper.findOneWithNotFoundDetection(currencyToCode);
 
             final BigDecimal amount = command.bigDecimalValueOfParameterNamed(ForexExchangeApiConstants.amountParamName);
+            final LocalDate transactionDate = command.localDateValueOfParameterNamed(ForexExchangeApiConstants.transactionDateParamName);
             //for example home currency = UGX
             if (currencyTo.isHomeCurrency()) {// USD -> UGX
-                final ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyFrom.getCode(), ExchangeRateType.BUYING.getValue());
+                final ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeDateWithNotFoundDetection(currencyFrom.getCode(), ExchangeRateType.BUYING.getValue(), transactionDate);
                 final ForexExchange forexExchange = ForexExchange.fromJson(command, exchangeRate, currentUser, currencyFrom, currencyTo);
                 forexExchange.setAmountGiven(amount);
                 forexExchange.setAmountTaken(amount.multiply(exchangeRate.getAmount()));
                 this.forexExchangeRepository.save(forexExchange);
             } else if (currencyFrom.isHomeCurrency()) {// UGX -> USD
-                final ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyTo.getCode(), ExchangeRateType.SELLING.getValue());
+                final ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeDateWithNotFoundDetection(currencyTo.getCode(), ExchangeRateType.SELLING.getValue(), transactionDate);
                 final ForexExchange forexExchange = ForexExchange.fromJson(command, exchangeRate, currentUser, currencyFrom, currencyTo);
                 forexExchange.setAmountGiven(amount);
                 forexExchange.setAmountTaken(amount.divide(exchangeRate.getAmount(), 6, RoundingMode.HALF_EVEN));
@@ -88,14 +90,14 @@ public class ForexExchangeWritePlatformServiceJpaRepositoryImpl implements Forex
             } else {// USD -> UGX -> EUR
                 final OrganisationCurrency homeCurrency = this.organisationCurrencyRepositoryWrapper.findHomeCurrencyNotFoundDetection();
 
-                final ExchangeRate exchangeRateToHomeCurrency = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyFrom.getCode(), ExchangeRateType.BUYING.getValue());
+                final ExchangeRate exchangeRateToHomeCurrency = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeDateWithNotFoundDetection(currencyFrom.getCode(), ExchangeRateType.BUYING.getValue(), transactionDate);
                 final ForexExchange forexExchangeToHomeCurrency = ForexExchange.fromJson(command, exchangeRateToHomeCurrency, currentUser, currencyFrom, homeCurrency);
                 forexExchangeToHomeCurrency.setAmountGiven(amount);
                 final BigDecimal exchangedAmount = amount.multiply(exchangeRateToHomeCurrency.getAmount());
                 forexExchangeToHomeCurrency.setAmountTaken(exchangedAmount);
                 this.forexExchangeRepository.save(forexExchangeToHomeCurrency);
 
-                final ExchangeRate exchangeRateFromHomeCurrency = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyTo.getCode(), ExchangeRateType.SELLING.getValue());
+                final ExchangeRate exchangeRateFromHomeCurrency = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeDateWithNotFoundDetection(currencyTo.getCode(), ExchangeRateType.SELLING.getValue(), transactionDate);
                 final ForexExchange forexExchangeFromHomeCurrency = ForexExchange.fromJson(command, exchangeRateFromHomeCurrency, currentUser, homeCurrency, currencyTo);
                 forexExchangeFromHomeCurrency.setAmountGiven(exchangedAmount);
                 forexExchangeFromHomeCurrency.setAmountTaken(exchangedAmount.divide(exchangeRateFromHomeCurrency.getAmount(), 6, RoundingMode.HALF_EVEN));

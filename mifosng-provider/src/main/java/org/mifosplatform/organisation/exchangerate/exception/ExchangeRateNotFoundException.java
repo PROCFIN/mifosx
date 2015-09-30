@@ -5,6 +5,7 @@
  */
 package org.mifosplatform.organisation.exchangerate.exception;
 
+import org.joda.time.LocalDate;
 import org.mifosplatform.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
 import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 
@@ -20,5 +21,8 @@ public class ExchangeRateNotFoundException extends AbstractPlatformResourceNotFo
     }
     public ExchangeRateNotFoundException(final String currency, final ExchangeRateType rateType) {
         super("error.msg.exchange.rate.currency.invalid", "Exchange rate for currency '" + currency + "' with '" + rateType.getCode() + "' rate type does not exist", currency, rateType.getCode());
+    }
+    public ExchangeRateNotFoundException(final String currency, final ExchangeRateType rateType, LocalDate localDate) {
+        super("error.msg.exchange.rate.currency.invalid", "Exchange rate for currency '" + currency + "' with '" + rateType.getCode() + "' rate type before '" + localDate.toString() + "' does not exist", currency, rateType.getCode(), localDate);
     }
 }

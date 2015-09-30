@@ -429,7 +429,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final String uniqueVal = String.valueOf(time) + currentUser.getId() + cashierOffice.getId();
             final String transactionId = Long.toHexString(Long.parseLong(uniqueVal));
 
-            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(cashierTxn.getCurrencyCode(), ExchangeRateType.INTERMEDIARY.getValue());
+            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(cashierTxn.getCurrencyCode(), ExchangeRateType.INTERMEDIARY.getValue());
 
             final JournalEntry debitJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment detail
                     debitAccount, cashierTxn.getCurrencyCode(), exchangeRate,

@@ -5,12 +5,11 @@
  */
 package org.mifosplatform.organisation.office.domain;
 
+import org.springframework.data.jpa.domain.AbstractPersistable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
  * Represents currencies allowed for this MFI/organisation.
@@ -38,7 +37,7 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
     private final String displaySymbol;
 
     @Column(name = "is_home_currency", nullable = true)
-    private final Boolean isHomeCurrency;
+    private final boolean isHomeCurrency;
 
     protected OrganisationCurrency() {
         this.code = null;
@@ -47,11 +46,11 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
         this.inMultiplesOf = null;
         this.nameCode = null;
         this.displaySymbol = null;
-        this.isHomeCurrency = null;
+        this.isHomeCurrency = false;
     }
 
     public OrganisationCurrency(final String code, final String name, final int decimalPlaces, final Integer inMultiplesOf,
-            final String nameCode, final String displaySymbol, final Boolean isHomeCurrency) {
+                                final String nameCode, final String displaySymbol, final boolean isHomeCurrency) {
         this.code = code;
         this.name = name;
         this.decimalPlaces = decimalPlaces;
@@ -62,10 +61,10 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
     }
 
     public final String getCode() {
-    	return code;
+        return code;
     }
 
-    public Boolean isHomeCurrency() {
+    public boolean isHomeCurrency() {
         return isHomeCurrency;
     }
 }

@@ -571,7 +571,7 @@ public class AccountingProcessorHelper {
             loanTransaction = this.loanTransactionRepository.findOne(id);
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
-        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.CREDIT, amount, null, PortfolioProductType.LOAN.getValue(), loanId, null,
                 loanTransaction, savingsAccountTransaction);
@@ -590,7 +590,7 @@ public class AccountingProcessorHelper {
             savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
-        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.CREDIT, amount, null, PortfolioProductType.SAVING.getValue(), savingsId,
                 null, loanTransaction, savingsAccountTransaction);
@@ -609,7 +609,7 @@ public class AccountingProcessorHelper {
             loanTransaction = this.loanTransactionRepository.findOne(id);
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
-        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.DEBIT, amount, null, PortfolioProductType.LOAN.getValue(), loanId, null,
                 loanTransaction, savingsAccountTransaction);
@@ -628,7 +628,7 @@ public class AccountingProcessorHelper {
             savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
-        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+        ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, exchangeRate, modifiedTransactionId,
                 manualEntry, transactionDate, JournalEntryType.DEBIT, amount, null, PortfolioProductType.SAVING.getValue(), savingsId,
                 null, loanTransaction, savingsAccountTransaction);

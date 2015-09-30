@@ -459,7 +459,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
 
             /** Validate current code is appropriate **/
             this.organisationCurrencyRepository.findOneWithNotFoundDetection(currencyCode);
-            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
 
             final JournalEntry glJournalEntry = JournalEntry.createNew(office, paymentDetail, glAccount, currencyCode, exchangeRate, transactionId,
                     manualEntry, transactionDate, type, singleDebitOrCreditEntryCommand.getAmount(), comments, null, null, referenceNumber,
@@ -578,7 +578,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
             if (!StringUtils.isBlank(singleDebitOrCreditEntryCommand.getComments())) {
                 comments = singleDebitOrCreditEntryCommand.getComments();
             }
-            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
+            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(currencyCode, ExchangeRateType.INTERMEDIARY.getValue());
             final JournalEntry glJournalEntry = JournalEntry.createNew(office, null, glAccount, currencyCode, exchangeRate, transactionId, manualEntry,
                     transactionDate, type, singleDebitOrCreditEntryCommand.getAmount(), comments, null, null, null, null, null);
             this.glJournalEntryRepository.saveAndFlush(glJournalEntry);
