@@ -3,22 +3,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.mifosplatform.organisation.exchangerate.api;
+package org.mifosplatform.organisation.forexexchange.api;
 
 import org.mifosplatform.commands.domain.CommandWrapper;
 import org.mifosplatform.commands.service.CommandWrapperBuilder;
 import org.mifosplatform.commands.service.PortfolioCommandSourceWritePlatformService;
-import org.mifosplatform.infrastructure.codes.data.CodeValueData;
 import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.api.ApiRequestParameterHelper;
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
-import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.mifosplatform.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
-import org.mifosplatform.organisation.exchangerate.data.ExchangeRateData;
-import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
-import org.mifosplatform.organisation.exchangerate.service.ExchangeRatePlatformService;
+import org.mifosplatform.organisation.forexexchange.data.ForexExchangeData;
+import org.mifosplatform.organisation.forexexchange.service.ForexExchangePlatformService;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,33 +26,30 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
-@Path("/exchangerate")
+@Path("/forexexchange")
 @Component
 @Scope("singleton")
-public class ExchangeRateApiResource {
+public class ForexExchangeApiResource {
 
-    private final String resourceNameForPermissions = "EXCHANGERATE";
+    private final String resourceNameForPermissions = "FOREXEXCHANGE";
 
     private final PlatformSecurityContext context;
-    private final ExchangeRatePlatformService readPlatformService;
-    private final DefaultToApiJsonSerializer<ExchangeRateData> toApiJsonSerializer;
+    private final ForexExchangePlatformService readPlatformService;
+    private final DefaultToApiJsonSerializer<ForexExchangeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final CurrencyReadPlatformService currencyReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
-    public ExchangeRateApiResource(final PlatformSecurityContext context, final ExchangeRatePlatformService readPlatformService,
-                                   final DefaultToApiJsonSerializer<ExchangeRateData> toApiJsonSerializer,
-                                   final ApiRequestParameterHelper apiRequestParameterHelper,
-                                   final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-                                   final CurrencyReadPlatformService currencyReadPlatformService,
-                                   final CodeValueReadPlatformService codeValueReadPlatformService) {
+    public ForexExchangeApiResource(final PlatformSecurityContext context, final ForexExchangePlatformService readPlatformService,
+                                    final DefaultToApiJsonSerializer<ForexExchangeData> toApiJsonSerializer,
+                                    final ApiRequestParameterHelper apiRequestParameterHelper,
+                                    final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+                                    final CurrencyReadPlatformService currencyReadPlatformService,
+                                    final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -72,10 +66,10 @@ public class ExchangeRateApiResource {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
-        final Collection<ExchangeRateData> exchangeRates = this.readPlatformService.retrieveAllExchangeRates(sqlSearch);
+        final Collection<ForexExchangeData> exchangeRates = this.readPlatformService.retrieveAllForexExchanges(sqlSearch);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, exchangeRates, ExchangeRateApiConstants.EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS);
+        return this.toApiJsonSerializer.serialize(settings, exchangeRates, ForexExchangeApiConstants.FOREX_EXCHANGE_RESPONSE_DATA_PARAMETERS);
     }
 
     @POST
@@ -83,7 +77,7 @@ public class ExchangeRateApiResource {
     @Produces({MediaType.APPLICATION_JSON})
     public String createExchangeRate(final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().createExchangeRate().withJson(apiRequestBodyAsJson).build();
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().createForexExchange().withJson(apiRequestBodyAsJson).build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
@@ -98,44 +92,43 @@ public class ExchangeRateApiResource {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
-        ExchangeRateData exchangeRateData = ExchangeRateData.sensibleDefaultsForNewExchangeRateCreation();
-        exchangeRateData = handleTemplate(exchangeRateData);
+        ForexExchangeData forexExchangeData = ForexExchangeData.sensibleDefaultsForNewForexExchangeCreation();
+        forexExchangeData = handleTemplate(forexExchangeData);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, exchangeRateData, ExchangeRateApiConstants.EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS);
+        return this.toApiJsonSerializer.serialize(settings, forexExchangeData, ForexExchangeApiConstants.FOREX_EXCHANGE_RESPONSE_DATA_PARAMETERS);
     }
 
-    private ExchangeRateData handleTemplate(final ExchangeRateData exchangeRateData) {
-        final Collection<EnumOptionData> allowedExchangeRateTypeOptions = ExchangeRateType.getAllRateTypes();
-        final Collection<CurrencyData> allowedExchangeRateCurrencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrenciesExceptHomeCurrency();
+    private ForexExchangeData handleTemplate(final ForexExchangeData forexExchangeData) {
+        final Collection<CurrencyData> allowedExchangeRateCurrencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrencies();
 
-        return new ExchangeRateData(exchangeRateData, allowedExchangeRateCurrencyOptions, allowedExchangeRateTypeOptions);
+        return new ForexExchangeData(forexExchangeData, allowedExchangeRateCurrencyOptions);
     }
 
     @GET
-    @Path("{exchangeRateId}")
+    @Path("{forexExchangeId}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public String retrieveExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId, @Context final UriInfo uriInfo) {
+    public String retrieveExchangeRate(@PathParam("exchangeRateId") final Long forexExchangeId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
-        ExchangeRateData exchangeRateData = this.readPlatformService.retrieveExchangeRate(exchangeRateId);
+        ForexExchangeData forexExchangeData = this.readPlatformService.retrieveForexExchange(forexExchangeId);
         if (settings.isTemplate()) {
-            exchangeRateData = handleTemplate(exchangeRateData);
+            forexExchangeData = handleTemplate(forexExchangeData);
         }
-        return this.toApiJsonSerializer.serialize(settings, exchangeRateData, ExchangeRateApiConstants.EXCHANGE_RATE_RESPONSE_DATA_PARAMETERS);
+        return this.toApiJsonSerializer.serialize(settings, forexExchangeData, ForexExchangeApiConstants.FOREX_EXCHANGE_RESPONSE_DATA_PARAMETERS);
     }
 
     @DELETE
-    @Path("{exchangeRateId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String deleteExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId) {
+    @Path("{forexExchangeId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String deleteExchangeRate(@PathParam("forexExchangeId") final Long forexExchangeId) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().deleteExchangeRate(exchangeRateId).build();
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().deleteForexExchange(forexExchangeId).build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
@@ -143,12 +136,12 @@ public class ExchangeRateApiResource {
     }
 
     @PUT
-    @Path("{exchangeRateId}")
+    @Path("{forexExchangeId}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public String updateExchangeRate(@PathParam("exchangeRateId") final Long exchangeRateId, final String apiRequestBodyAsJson) {
+    public String updateExchangeRate(@PathParam("forexExchangeId") final Long forexExchangeId, final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().updateExchangeRate(exchangeRateId).withJson(apiRequestBodyAsJson).build();
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().updateForexExchange(forexExchangeId).withJson(apiRequestBodyAsJson).build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 

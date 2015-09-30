@@ -117,4 +117,8 @@ public class ExchangeRate extends AbstractPersistable<Long> {
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
 }

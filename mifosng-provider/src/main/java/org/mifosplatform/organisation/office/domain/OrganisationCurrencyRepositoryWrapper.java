@@ -36,4 +36,10 @@ public class OrganisationCurrencyRepositoryWrapper {
         if (organisationCurrency == null) { throw new OrganizationalCurrencyNotFoundException(currencyCode); }
         return organisationCurrency;
     }
+
+    public OrganisationCurrency findHomeCurrencyNotFoundDetection() {
+        final OrganisationCurrency organisationCurrency = this.repository.findOneWithHomeCurrency();
+        if (organisationCurrency == null) { throw new OrganizationalCurrencyNotFoundException(); }
+        return organisationCurrency;
+    }
 }

@@ -208,6 +208,30 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder createForexExchange() {
+        this.actionName = "CREATE";
+        this.entityName = "FOREXEXCHANGE";
+        this.entityId = null;
+        this.href = "/forexexchange/template";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateForexExchange(final Long forexExchangeId) {
+        this.actionName = "UPDATE";
+        this.entityName = "FOREXEXCHANGE";
+        this.entityId = forexExchangeId;
+        this.href = "/forexexchange/" + forexExchangeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteForexExchange(final Long forexExchangeId) {
+        this.actionName = "DELETE";
+        this.entityName = "FOREXEXCHANGE";
+        this.entityId = forexExchangeId;
+        this.href = "/forexexchange/" + forexExchangeId;
+        return this;
+    }
+
     public CommandWrapperBuilder createGuarantor(final Long loanId) {
         this.actionName = "CREATE";
         this.entityName = "GUARANTOR";

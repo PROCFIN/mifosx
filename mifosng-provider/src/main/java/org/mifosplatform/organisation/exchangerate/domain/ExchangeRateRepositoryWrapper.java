@@ -34,10 +34,10 @@ public class ExchangeRateRepositoryWrapper {
         return exchangeRate;
     }
 
-    public ExchangeRate findOneByCurrencyAndTypeWithNotFoundDetection(final String currencyCode, int rateType) {
+    public ExchangeRate findOneByCurrencyAndTypeWithNotFoundDetection(final String currencyCode, int rateTypeId) {
         LocalDate localDate = new LocalDate().plusDays(1);
-        final ExchangeRate exchangeRate = this.repository.findByCurrencyAndTypeAndDateBefore(currencyCode, rateType, localDate.toDate());
-        if (exchangeRate == null) { throw new ExchangeRateNotFoundException(currencyCode, rateType); }
+        final ExchangeRate exchangeRate = this.repository.findByCurrencyAndTypeAndDateBefore(currencyCode, rateTypeId, localDate.toDate());
+        if (exchangeRate == null) { throw new ExchangeRateNotFoundException(currencyCode, ExchangeRateType.fromInt(rateTypeId)); }
         return exchangeRate;
     }
 

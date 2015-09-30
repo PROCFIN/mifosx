@@ -6,6 +6,7 @@
 package org.mifosplatform.organisation.exchangerate.exception;
 
 import org.mifosplatform.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
+import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 
 import java.util.Date;
 
@@ -17,7 +18,7 @@ public class ExchangeRateNotFoundException extends AbstractPlatformResourceNotFo
     public ExchangeRateNotFoundException(final Long id) {
         super("error.msg.exchange.rate.id.invalid", "Exchange rate with identifier " + id + " does not exist", id);
     }
-    public ExchangeRateNotFoundException(final String currency, final int rateType) {
-        super("error.msg.exchange.rate.currency.invalid", "Exchange rate with currency '" + currency + "' with rate type identified with '" + rateType + "' does not exist", currency, rateType);
+    public ExchangeRateNotFoundException(final String currency, final ExchangeRateType rateType) {
+        super("error.msg.exchange.rate.currency.invalid", "Exchange rate for currency '" + currency + "' with '" + rateType.getCode() + "' rate type does not exist", currency, rateType.getCode());
     }
 }

@@ -64,4 +64,8 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
     public final String getCode() {
     	return code;
     }
+
+    public Boolean isHomeCurrency() {
+        return isHomeCurrency;
+    }
 }

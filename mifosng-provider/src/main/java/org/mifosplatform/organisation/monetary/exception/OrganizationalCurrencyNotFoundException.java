@@ -17,4 +17,7 @@ public class OrganizationalCurrencyNotFoundException extends AbstractPlatformRes
         super("error.msg.currency.currencyCode.invalid.or.not.supported", "Currency with identifier " + currencyCode
                 + " does not exist or is not supported by the Organization", currencyCode);
     }
+    public OrganizationalCurrencyNotFoundException() {
+        super("error.msg.currency.home.is.not.set", "Home currency does not exist or is not supported by the Organization");
+    }
 }

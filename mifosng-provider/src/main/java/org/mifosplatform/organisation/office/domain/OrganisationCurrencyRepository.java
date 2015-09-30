@@ -7,9 +7,13 @@ package org.mifosplatform.organisation.office.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 public interface OrganisationCurrencyRepository extends JpaRepository<OrganisationCurrency, Long>,
         JpaSpecificationExecutor<OrganisationCurrency> {
 
     OrganisationCurrency findOneByCode(String currencyCode);
+
+    @Query("from OrganisationCurrency oc where oc.isHomeCurrency = true")
+    OrganisationCurrency findOneWithHomeCurrency();
 }
