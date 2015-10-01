@@ -90,7 +90,7 @@ public class FinancialActivityAccountsApiResource {
     @Path("{mappingId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retreive(@PathParam("mappingId") final Long mappingId, @Context final UriInfo uriInfo) {
+    public String retrieve(@PathParam("mappingId") final Long mappingId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(FinancialActivityAccountsConstants.resourceNameForPermission);
 

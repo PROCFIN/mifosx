@@ -588,13 +588,14 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" txn.txn_type as txn_type, ");
             sqlBuilder.append(" txn.txn_amount as txn_amount, txn.txn_date as txn_date, txn.txn_note as txn_note, ");
             sqlBuilder.append(" txn.entity_type as entity_type, txn.entity_id as entity_id, txn.created_date as created_date, ");
-            sqlBuilder
-                    .append(" o.id as office_id, o.name as office_name, t.id as teller_id, t.name as teller_name, s.display_name as cashier_name ");
+            sqlBuilder.append(" o.id as office_id, o.name as office_name, t.id as teller_id, t.name as teller_name, s.display_name as cashier_name, ");
+            sqlBuilder.append(" cur.code as currencyCode, cur.decimal_places as currencyDecimalPlaces, cur.currency_multiplesof as inMultiplesOf, cur.`name` as currencyName, cur.display_symbol as currencyDisplaySymbol, cur.internationalized_name_code as currencyNameCode ");
             sqlBuilder.append(" from m_cashier_transactions txn ");
             sqlBuilder.append(" left join m_cashiers c on c.id = txn.cashier_id ");
             sqlBuilder.append(" left join m_tellers t on t.id = c.teller_id ");
             sqlBuilder.append(" left join m_office o on o.id = t.office_id ");
             sqlBuilder.append(" left join m_staff s on s.id = c.staff_id ");
+            sqlBuilder.append(" left join m_currency cur on cur.code = txn.currency_code ");
 
             return sqlBuilder.toString();
         }
@@ -615,7 +616,8 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" sav_txn.amount as txn_amount, sav_txn.transaction_date as txn_date, ");
             sqlBuilder.append(" concat (renum.enum_value, ', Sav:', sav.id, '-', sav.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append(" 'savings' as entity_type, sav.id as entity_id, sav_txn.created_date as created_date, ");
-            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name, ");
+            sqlBuilder.append(" cur.code as currencyCode, cur.decimal_places as currencyDecimalPlaces, cur.currency_multiplesof as inMultiplesOf, cur.`name` as currencyName, cur.display_symbol as currencyDisplaySymbol, cur.internationalized_name_code as currencyNameCode ");
             sqlBuilder.append(" from m_savings_account_transaction sav_txn ");
             sqlBuilder.append(" left join r_enum_value renum on sav_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'savings_transaction_type_enum' ");
             sqlBuilder.append(" left join m_savings_account sav on sav_txn.savings_account_id = sav.id ");
@@ -624,6 +626,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" left join m_appuser user on sav_txn.appuser_id = user.id ");
             sqlBuilder.append(" left join m_staff staff on user.staff_id = staff.id ");
             sqlBuilder.append(" left join m_cashiers c on c.staff_id = staff.id ");
+            sqlBuilder.append(" left join m_currency cur on cur.code = sav.currency_code ");
 
             return sqlBuilder.toString();
         }
@@ -644,7 +647,8 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" loan_txn.amount as txn_amount, loan_txn.transaction_date as txn_date, ");
             sqlBuilder.append(" concat (renum.enum_value, ', Loan:', loan.id, '-', loan.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append(" 'loans' as entity_type, loan.id as entity_id, loan_txn.created_date as created_date, ");
-            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name, ");
+            sqlBuilder.append(" cur.code as currencyCode, cur.decimal_places as currencyDecimalPlaces, cur.currency_multiplesof as inMultiplesOf, cur.`name` as currencyName, cur.display_symbol as currencyDisplaySymbol, cur.internationalized_name_code as currencyNameCode ");
             sqlBuilder.append(" from m_loan_transaction loan_txn ");
             sqlBuilder.append(" left join r_enum_value renum on loan_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'transaction_type_enum' ");
             sqlBuilder.append(" left join m_loan loan on loan_txn.loan_id = loan.id ");
@@ -653,6 +657,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" left join m_appuser user on loan_txn.appuser_id = user.id ");
             sqlBuilder.append(" left join m_staff staff on user.staff_id = staff.id ");
             sqlBuilder.append(" left join m_cashiers c on c.staff_id = staff.id ");
+            sqlBuilder.append(" left join m_currency cur on cur.code = loan.currency_code ");
 
             return sqlBuilder.toString();
         }
@@ -686,7 +691,15 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             final String tellerName = rs.getString("teller_name");
             final String cashierName = rs.getString("cashier_name");
 
-            return CashierTransactionData.instance(id, cashierId, txnType, txnAmount, txnDate, txnNote, entityType, entityId, createdDate,
+            final String currencyCode = rs.getString("currencyCode");
+            final String currencyName = rs.getString("currencyName");
+            final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
+            final String currencyNameCode = rs.getString("currencyNameCode");
+            final Integer currencyDecimalPlaces = JdbcSupport.getInteger(rs, "currencyDecimalPlaces");
+            final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+            final CurrencyData currencyData = new CurrencyData(currencyCode, currencyName, currencyDecimalPlaces, inMultiplesOf, currencyDisplaySymbol, currencyNameCode);
+
+            return CashierTransactionData.instance(id, cashierId, txnType, txnAmount, txnDate, txnNote, entityType, entityId, createdDate, currencyData,
                     officeId, officeName, tellerId, tellerName, cashierName, null, null, null);
         }
     }

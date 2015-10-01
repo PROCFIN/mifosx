@@ -114,6 +114,10 @@ public class ForexExchangeWritePlatformServiceJpaRepositoryImpl implements Forex
         }
     }
 
+    private void saveExchange() {
+
+    }
+
     @Transactional
     @Override
     public CommandProcessingResult updateForexExchange(final Long forexExchangeId, final JsonCommand command) {
