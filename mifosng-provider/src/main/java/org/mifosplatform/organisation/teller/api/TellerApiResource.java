@@ -19,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.mifosplatform.commands.domain.CommandWrapper;
@@ -27,6 +28,9 @@ import org.mifosplatform.commands.service.PortfolioCommandSourceWritePlatformSer
 import org.mifosplatform.infrastructure.core.data.CommandProcessingResult;
 import org.mifosplatform.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
+import org.mifosplatform.organisation.monetary.data.CurrencyData;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrency;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrencyRepositoryWrapper;
 import org.mifosplatform.organisation.teller.data.CashierData;
 import org.mifosplatform.organisation.teller.data.CashierTransactionData;
 import org.mifosplatform.organisation.teller.data.CashierTransactionsWithSummaryData;
@@ -48,15 +52,20 @@ public class TellerApiResource {
     private final DefaultToApiJsonSerializer<TellerData> jsonSerializer;
     private final TellerManagementReadPlatformService readPlatformService;
     private final PortfolioCommandSourceWritePlatformService commandWritePlatformService;
+    private final OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper;
 
     @Autowired
-    public TellerApiResource(PlatformSecurityContext securityContext, DefaultToApiJsonSerializer<TellerData> jsonSerializer,
-            TellerManagementReadPlatformService readPlatformService, PortfolioCommandSourceWritePlatformService commandWritePlatformService) {
+    public TellerApiResource(PlatformSecurityContext securityContext,
+                             DefaultToApiJsonSerializer<TellerData> jsonSerializer,
+                             TellerManagementReadPlatformService readPlatformService,
+                             PortfolioCommandSourceWritePlatformService commandWritePlatformService,
+                             OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper) {
         super();
         this.securityContext = securityContext;
         this.jsonSerializer = jsonSerializer;
         this.readPlatformService = readPlatformService;
         this.commandWritePlatformService = commandWritePlatformService;
+        this.organisationCurrencyRepositoryWrapper = organisationCurrencyRepositoryWrapper;
     }
 
     @GET
@@ -258,9 +267,14 @@ public class TellerApiResource {
 
         final Date fromDate = null;
         final Date toDate = null;
+        String actualCurrencyCode = null;
+        if (!"ALL".equalsIgnoreCase(currencyCode) && !StringUtils.isEmpty(currencyCode)) {
+            OrganisationCurrency organisationCurrency = this.organisationCurrencyRepositoryWrapper.findOneWithNotFoundDetection(currencyCode);
+            actualCurrencyCode = organisationCurrency.getCode();
+        }
 
         final CashierTransactionsWithSummaryData cashierTxnWithSummary = this.readPlatformService.retrieveCashierTransactionsWithSummary(
-                cashierId, false, fromDate, toDate, currencyCode);
+                cashierId, false, fromDate, toDate, actualCurrencyCode);
 
         return this.jsonSerializer.serialize(cashierTxnWithSummary);
     }

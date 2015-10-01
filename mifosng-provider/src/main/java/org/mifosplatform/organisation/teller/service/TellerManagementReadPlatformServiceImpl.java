@@ -5,13 +5,6 @@
  */
 package org.mifosplatform.organisation.teller.service;
 
-import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDate;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
@@ -25,13 +18,7 @@ import org.mifosplatform.organisation.office.service.OfficeReadPlatformService;
 import org.mifosplatform.organisation.staff.data.StaffData;
 import org.mifosplatform.organisation.staff.exception.StaffNotFoundException;
 import org.mifosplatform.organisation.staff.service.StaffReadPlatformService;
-import org.mifosplatform.organisation.teller.data.CashierData;
-import org.mifosplatform.organisation.teller.data.CashierTransactionData;
-import org.mifosplatform.organisation.teller.data.CashierTransactionTypeTotalsData;
-import org.mifosplatform.organisation.teller.data.CashierTransactionsWithSummaryData;
-import org.mifosplatform.organisation.teller.data.TellerData;
-import org.mifosplatform.organisation.teller.data.TellerJournalData;
-import org.mifosplatform.organisation.teller.data.TellerTransactionData;
+import org.mifosplatform.organisation.teller.data.*;
 import org.mifosplatform.organisation.teller.domain.CashierTxnType;
 import org.mifosplatform.organisation.teller.domain.TellerStatus;
 import org.mifosplatform.useradministration.domain.AppUser;
@@ -40,13 +27,23 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 
 @Service
 public class TellerManagementReadPlatformServiceImpl implements TellerManagementReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final PlatformSecurityContext context;
     private final TellerLookupMapper lookupMapper = new TellerLookupMapper();
     private final TellerInOfficeHierarchyMapper tellerInOfficeHierarchyMapper = new TellerInOfficeHierarchyMapper();
@@ -55,11 +52,14 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
     private final CurrencyReadPlatformService currencyReadPlatformService;
 
     @Autowired
-    public TellerManagementReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final OfficeReadPlatformService officeReadPlatformService, StaffReadPlatformService staffReadPlatformService,
-            final CurrencyReadPlatformService currencyReadPlatformService) {
+    public TellerManagementReadPlatformServiceImpl(final PlatformSecurityContext context,
+                                                   final RoutingDataSource dataSource,
+                                                   final OfficeReadPlatformService officeReadPlatformService,
+                                                   final StaffReadPlatformService staffReadPlatformService,
+                                                   final CurrencyReadPlatformService currencyReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.officeReadPlatformService = officeReadPlatformService;
         this.staffReadPlatformService = staffReadPlatformService;
         this.currencyReadPlatformService = currencyReadPlatformService;
@@ -180,7 +180,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
 
         final String sql = "select " + this.lookupMapper.schema() + " where s.office_id = ? and s.is_active=1 ";
 
-        return this.jdbcTemplate.query(sql, this.lookupMapper, new Object[] { defaultOfficeId });
+        return this.jdbcTemplate.query(sql, this.lookupMapper, new Object[]{defaultOfficeId});
     }
 
     private Long defaultToUsersOfficeIfNull(final Long officeId) {
@@ -198,7 +198,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             final TellerMapper tm = new TellerMapper();
             final String sql = "select " + tm.schema() + " where t.id = ?";
 
-            return this.jdbcTemplate.queryForObject(sql, tm, new Object[] { tellerId });
+            return this.jdbcTemplate.queryForObject(sql, tm, new Object[]{tellerId});
         } catch (final EmptyResultDataAccessException e) {
             throw new StaffNotFoundException(tellerId);
         }
@@ -218,7 +218,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sql += " where " + extraCriteria;
         }
         sql = sql + " order by t.teller_name";
-        return this.jdbcTemplate.query(sql, tm, new Object[] {});
+        return this.jdbcTemplate.query(sql, tm, new Object[]{});
     }
 
     private String getTellerCriteria(final String sqlSearch, final Long officeId, final String status) {
@@ -237,8 +237,9 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             extraCriteria.append(" and status = 300 ");
         } else if (status.equalsIgnoreCase("inActive")) {
             extraCriteria.append(" and status = 0 ");
-        } else if (status.equalsIgnoreCase("all")) {} else {
-            throw new UnrecognizedQueryParamException("status", status, new Object[] { "all", "active", "inactive" });
+        } else if (status.equalsIgnoreCase("all")) {
+        } else {
+            throw new UnrecognizedQueryParamException("status", status, new Object[]{"all", "active", "inactive"});
         }
 
         if (StringUtils.isNotBlank(extraCriteria.toString())) {
@@ -292,7 +293,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sql += " where " + extraCriteria;
         }
         sql = sql + " order by teller_name";
-        return this.jdbcTemplate.query(sql, cm, new Object[] {});
+        return this.jdbcTemplate.query(sql, cm, new Object[]{});
     }
 
     @Override
@@ -301,7 +302,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             final CashierMapper cm = new CashierMapper();
             final String sql = "select " + cm.schema() + " where c.id = ?";
 
-            return this.jdbcTemplate.queryForObject(sql, cm, new Object[] { cashierId });
+            return this.jdbcTemplate.queryForObject(sql, cm, new Object[]{cashierId});
         } catch (final EmptyResultDataAccessException e) {
             throw new StaffNotFoundException(cashierId);
         }
@@ -356,7 +357,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
         final TellerMapper tm = new TellerMapper();
         final String sql = "select " + tm.schema() + "where o.hierarchy like ? order by o.hierarchy";
 
-        return this.jdbcTemplate.query(sql, tm, new Object[] { hierarchySearchString });
+        return this.jdbcTemplate.query(sql, tm, new Object[]{hierarchySearchString});
     }
 
     @Override
@@ -426,7 +427,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
 
     @Override
     public CashierTransactionsWithSummaryData retrieveCashierTransactionsWithSummary(final Long cashierId, final boolean includeAllTellers,
-            final Date fromDate, final Date toDate, final String currencyCode) {
+                                                                                     final Date fromDate, final Date toDate, final String currencyCode) {
         CashierData cashierData = findCashier(cashierId);
         Long staffId = cashierData.getStaffId();
         StaffData staffData = staffReadPlatformService.retrieveStaff(staffId);
@@ -439,11 +440,14 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             hierarchySearchString = hierarchy;
         }
         final CashierTransactionSummaryMapper ctsm = new CashierTransactionSummaryMapper();
-        final String sql = "select " + ctsm.cashierTxnSummarySchema() + " limit 1000";
+        final String sql = "select " + ctsm.cashierTxnSummarySchema(currencyCode) + " limit 1000";
 
-        Collection<CashierTransactionTypeTotalsData> cashierTxnTypeTotals = this.jdbcTemplate.query(sql, ctsm, new Object[] { cashierId,
-                currencyCode, hierarchySearchString, cashierId, currencyCode, hierarchySearchString, cashierId, currencyCode,
-                hierarchySearchString });
+        MapSqlParameterSource paramSource = new MapSqlParameterSource();
+        paramSource.addValue("cashierId", cashierId);
+        paramSource.addValue("currencyCode", currencyCode);
+        paramSource.addValue("hierarchySearchString", hierarchySearchString);
+
+        Collection<CashierTransactionTypeTotalsData> cashierTxnTypeTotals = this.namedParameterJdbcTemplate.query(sql, paramSource, ctsm);
 
         Iterator<CashierTransactionTypeTotalsData> itr = cashierTxnTypeTotals.iterator();
         BigDecimal allocAmount = new BigDecimal(0);
@@ -479,7 +483,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
 
     @Override
     public Collection<CashierTransactionData> retrieveCashierTransactions(final Long cashierId, final boolean includeAllTellers,
-            final Date fromDate, final Date toDate, final String currencyCode) {
+                                                                          final Date fromDate, final Date toDate, final String currencyCode) {
         CashierData cashierData = findCashier(cashierId);
         Long staffId = cashierData.getStaffId();
         StaffData staffData = staffReadPlatformService.retrieveStaff(staffId);
@@ -494,20 +498,42 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
 
         final CashierTransactionMapper ctm = new CashierTransactionMapper();
 
-        final String sql = "select * from (select " + ctm.cashierTxnSchema()
-                + " where txn.cashier_id = ? and txn.currency_code = ? and o.hierarchy like ? ) cashier_txns " + " union (select "
-                + ctm.savingsTxnSchema()
-                + " where sav_txn.is_reversed = 0 and c.id = ? and sav.currency_code = ? and o.hierarchy like ? and "
-                + " sav_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) "
-                + " and renum.enum_value in ('deposit','withdrawal fee', 'Pay Charge', 'withdrawal') ) " + " union (select "
-                + ctm.loansTxnSchema()
-                + " where loan_txn.is_reversed = 0 and c.id = ? and loan.currency_code = ? and o.hierarchy like ? and "
-                + " loan_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) "
-                + " and renum.enum_value in ('Repayment At Disbursement','Repayment', 'Recovery Payment','Disbursement') ) "
-                + " order by created_date ";
+        final StringBuilder sql = new StringBuilder();
+        sql.append("select * from (select ");
+        sql.append(ctm.cashierTxnSchema());
+        sql.append(" where txn.cashier_id = :cashierId ");
+        if (currencyCode != null) {
+            sql.append(" and txn.currency_code = :currencyCode ");
+        }
+        sql.append(" and o.hierarchy like :hierarchySearchString ) cashier_txns ");
+        sql.append(" union (select ");
+        sql.append(ctm.savingsTxnSchema());
+        sql.append(" where sav_txn.is_reversed = 0 and c.id = :cashierId ");
+        if (currencyCode != null) {
+            sql.append(" and sav.currency_code = :currencyCode ");
+        }
+        sql.append(" and o.hierarchy like :hierarchySearchString and ");
+        sql.append(" sav_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) ");
+        sql.append(" and renum.enum_value in ('deposit','withdrawal fee', 'Pay Charge', 'withdrawal') ) ");
+        sql.append(" union (select ");
+        sql.append(ctm.loansTxnSchema());
+        sql.append(" where loan_txn.is_reversed = 0 and c.id = :cashierId ");
+        if (currencyCode != null) {
+            sql.append(" and loan.currency_code = :currencyCode ");
+        }
+        sql.append(" and o.hierarchy like :hierarchySearchString and ");
+        sql.append(" loan_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) ");
+        sql.append(" and renum.enum_value in ('Repayment At Disbursement','Repayment', 'Recovery Payment','Disbursement') ) ");
+        sql.append(" order by created_date ");
 
-        return this.jdbcTemplate.query(sql, ctm, new Object[] { cashierId, currencyCode, hierarchySearchString, cashierId, currencyCode,
-                hierarchySearchString, cashierId, currencyCode, hierarchySearchString });
+
+        MapSqlParameterSource paramSource = new MapSqlParameterSource();
+        paramSource.addValue("cashierId", cashierId);
+        paramSource.addValue("currencyCode", currencyCode);
+        paramSource.addValue("hierarchySearchString", hierarchySearchString);
+
+        return this.namedParameterJdbcTemplate.query(sql.toString(), paramSource, ctm);
+
     }
 
     private static final class CashierMapper implements RowMapper<CashierData> {
@@ -587,14 +613,11 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" 		105 ");
             sqlBuilder.append(" end as txn_type, ");
             sqlBuilder.append(" sav_txn.amount as txn_amount, sav_txn.transaction_date as txn_date, ");
-            sqlBuilder
-                    .append(" concat (renum.enum_value, ', Sav:', sav.id, '-', sav.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
+            sqlBuilder.append(" concat (renum.enum_value, ', Sav:', sav.id, '-', sav.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append(" 'savings' as entity_type, sav.id as entity_id, sav_txn.created_date as created_date, ");
-            sqlBuilder
-                    .append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
             sqlBuilder.append(" from m_savings_account_transaction sav_txn ");
-            sqlBuilder
-                    .append(" left join r_enum_value renum on sav_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'savings_transaction_type_enum' ");
+            sqlBuilder.append(" left join r_enum_value renum on sav_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'savings_transaction_type_enum' ");
             sqlBuilder.append(" left join m_savings_account sav on sav_txn.savings_account_id = sav.id ");
             sqlBuilder.append(" left join m_client cl on sav.client_id = cl.id ");
             sqlBuilder.append(" left join m_office o on cl.office_id = o.id ");
@@ -619,14 +642,11 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append(" 		105 ");
             sqlBuilder.append(" end as cash_txn_type, ");
             sqlBuilder.append(" loan_txn.amount as txn_amount, loan_txn.transaction_date as txn_date, ");
-            sqlBuilder
-                    .append(" concat (renum.enum_value, ', Loan:', loan.id, '-', loan.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
+            sqlBuilder.append(" concat (renum.enum_value, ', Loan:', loan.id, '-', loan.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append(" 'loans' as entity_type, loan.id as entity_id, loan_txn.created_date as created_date, ");
-            sqlBuilder
-                    .append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append(" o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
             sqlBuilder.append(" from m_loan_transaction loan_txn ");
-            sqlBuilder
-                    .append(" left join r_enum_value renum on loan_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'transaction_type_enum' ");
+            sqlBuilder.append(" left join r_enum_value renum on loan_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'transaction_type_enum' ");
             sqlBuilder.append(" left join m_loan loan on loan_txn.loan_id = loan.id ");
             sqlBuilder.append(" left join m_client cl on loan.client_id = cl.id ");
             sqlBuilder.append(" left join m_office o on cl.office_id = o.id ");
@@ -673,7 +693,7 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
 
     private static final class CashierTransactionSummaryMapper implements RowMapper<CashierTransactionTypeTotalsData> {
 
-        public String cashierTxnSummarySchema() {
+        public String cashierTxnSummarySchema(final String currencyCode) {
 
             final StringBuilder sqlBuilder = new StringBuilder(400);
 
@@ -683,16 +703,17 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append("	txn.txn_type as cash_txn_type, ");
             sqlBuilder.append("	txn.txn_amount as txn_amount, txn.txn_date as txn_date, txn.txn_note as txn_note, ");
             sqlBuilder.append("	txn.entity_type as entity_type, txn.entity_id as entity_id, txn.created_date as created_date, ");
-            sqlBuilder
-                    .append("	o.id as office_id, o.name as office_name, t.id as teller_id, t.name as teller_name, s.display_name as cashier_name ");
+            sqlBuilder.append("	o.id as office_id, o.name as office_name, t.id as teller_id, t.name as teller_name, s.display_name as cashier_name ");
             sqlBuilder.append("	from m_cashier_transactions txn ");
             sqlBuilder.append("	left join m_cashiers c on c.id = txn.cashier_id ");
             sqlBuilder.append("	left join m_tellers t on t.id = c.teller_id ");
             sqlBuilder.append("	left join m_office o on o.id = t.office_id ");
             sqlBuilder.append("	left join m_staff s on s.id = c.staff_id ");
-            sqlBuilder.append("	where txn.cashier_id = ? ");
-            sqlBuilder.append(" and   txn.currency_code = ? ");
-            sqlBuilder.append("	and o.hierarchy like ?  ) cashier_txns ");
+            sqlBuilder.append("	where txn.cashier_id = :cashierId ");
+            if (currencyCode != null) {
+                sqlBuilder.append(" and txn.currency_code = :currencyCode ");
+            }
+            sqlBuilder.append("	and o.hierarchy like :hierarchySearchString  ) cashier_txns ");
             sqlBuilder.append("	UNION ");
             sqlBuilder.append("	(select sav_txn.id as txn_id, c.id as cashier_id, ");
             sqlBuilder.append("	case ");
@@ -704,23 +725,22 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append("			105 ");
             sqlBuilder.append("	end as cash_txn_type, ");
             sqlBuilder.append("	sav_txn.amount as txn_amount, sav_txn.transaction_date as txn_date, ");
-            sqlBuilder
-                    .append("	concat (renum.enum_value, ', Sav:', sav.id, '-', sav.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
+            sqlBuilder.append("	concat (renum.enum_value, ', Sav:', sav.id, '-', sav.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append("	'savings' as entity_type, sav.id as entity_id, sav_txn.created_date as created_date, ");
-            sqlBuilder
-                    .append("	o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append("	o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
             sqlBuilder.append("	from m_savings_account_transaction sav_txn ");
-            sqlBuilder
-                    .append("	left join r_enum_value renum on sav_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'savings_transaction_type_enum' ");
+            sqlBuilder.append("	left join r_enum_value renum on sav_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'savings_transaction_type_enum' ");
             sqlBuilder.append("	left join m_savings_account sav on sav_txn.savings_account_id = sav.id ");
             sqlBuilder.append("	left join m_client cl on sav.client_id = cl.id ");
             sqlBuilder.append("	left join m_office o on cl.office_id = o.id ");
             sqlBuilder.append("	left join m_appuser user on sav_txn.appuser_id = user.id ");
             sqlBuilder.append("	left join m_staff staff on user.staff_id = staff.id ");
             sqlBuilder.append("	left join m_cashiers c on c.staff_id = staff.id ");
-            sqlBuilder.append("	where sav_txn.is_reversed = 0 and c.id = ? ");
-            sqlBuilder.append(" and sav.currency_code = ? ");
-            sqlBuilder.append("	and o.hierarchy like ? ");
+            sqlBuilder.append("	where sav_txn.is_reversed = 0 and c.id = :cashierId ");
+            if (currencyCode != null) {
+                sqlBuilder.append(" and sav.currency_code = :currencyCode ");
+            }
+            sqlBuilder.append("	and o.hierarchy like :hierarchySearchString ");
             sqlBuilder.append("	and sav_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) ");
             sqlBuilder.append("	) ");
             sqlBuilder.append("	UNION ");
@@ -735,23 +755,22 @@ public class TellerManagementReadPlatformServiceImpl implements TellerManagement
             sqlBuilder.append("			105 ");
             sqlBuilder.append("	end as cash_txn_type, ");
             sqlBuilder.append("	loan_txn.amount as txn_amount, loan_txn.transaction_date as txn_date, ");
-            sqlBuilder
-                    .append("	concat (renum.enum_value, ', Loan:', loan.id, '-', loan.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
+            sqlBuilder.append("	concat (renum.enum_value, ', Loan:', loan.id, '-', loan.account_no, ',Client:', cl.id, '-',cl.display_name) as txn_note, ");
             sqlBuilder.append("	'loans' as entity_type, loan.id as entity_id, loan_txn.created_date as created_date, ");
-            sqlBuilder
-                    .append("	o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
+            sqlBuilder.append("	o.id as office_id, o.name as office_name, null as teller_id, null as teller_name, staff.display_name as cashier_name ");
             sqlBuilder.append("	from m_loan_transaction loan_txn ");
-            sqlBuilder
-                    .append("	left join r_enum_value renum on loan_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'transaction_type_enum' ");
+            sqlBuilder.append("	left join r_enum_value renum on loan_txn.transaction_type_enum = renum.enum_id and renum.enum_name = 'transaction_type_enum' ");
             sqlBuilder.append("	left join m_loan loan on loan_txn.loan_id = loan.id ");
             sqlBuilder.append("	left join m_client cl on loan.client_id = cl.id ");
             sqlBuilder.append("	left join m_office o on cl.office_id = o.id ");
             sqlBuilder.append("	left join m_appuser user on loan_txn.appuser_id = user.id ");
             sqlBuilder.append("	left join m_staff staff on user.staff_id = staff.id ");
             sqlBuilder.append("	left join m_cashiers c on c.staff_id = staff.id ");
-            sqlBuilder.append("	where loan_txn.is_reversed = 0 and c.id = ? ");
-            sqlBuilder.append(" and loan.currency_code = ? ");
-            sqlBuilder.append("	and o.hierarchy like ? ");
+            sqlBuilder.append("	where loan_txn.is_reversed = 0 and c.id = :cashierId ");
+            if (currencyCode != null) {
+                sqlBuilder.append(" and loan.currency_code = :currencyCode ");
+            }
+            sqlBuilder.append("	and o.hierarchy like :hierarchySearchString ");
             sqlBuilder.append("	and loan_txn.transaction_date between c.start_date and date_add(c.end_date, interval 1 day) ");
             sqlBuilder.append("	) ");
             sqlBuilder.append("	) txns ");
