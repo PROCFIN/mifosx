@@ -5,6 +5,7 @@
  */
 package org.mifosplatform.organisation.forexexchange.api;
 
+import org.apache.commons.lang.StringUtils;
 import org.mifosplatform.commands.domain.CommandWrapper;
 import org.mifosplatform.commands.service.CommandWrapperBuilder;
 import org.mifosplatform.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -18,10 +19,11 @@ import org.mifosplatform.organisation.forexexchange.data.ForexExchangeData;
 import org.mifosplatform.organisation.forexexchange.service.ForexExchangePlatformService;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrency;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrencyRepositoryWrapper;
 import org.mifosplatform.organisation.staff.data.StaffData;
 import org.mifosplatform.organisation.staff.service.StaffReadPlatformService;
 import org.mifosplatform.organisation.teller.data.CashierData;
-import org.mifosplatform.organisation.teller.data.CashierTransactionsWithSummaryData;
 import org.mifosplatform.organisation.teller.data.TellerData;
 import org.mifosplatform.organisation.teller.service.TellerManagementReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.util.Collection;
-import java.util.Date;
 
 @Path("/forexexchange")
 @Component
@@ -51,6 +52,7 @@ public class ForexExchangeApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final CurrencyReadPlatformService currencyReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
+    private final OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper;
 
     @Autowired
     public ForexExchangeApiResource(final PlatformSecurityContext context, final ForexExchangePlatformService readPlatformService,
@@ -60,7 +62,8 @@ public class ForexExchangeApiResource {
                                     final ApiRequestParameterHelper apiRequestParameterHelper,
                                     final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
                                     final CurrencyReadPlatformService currencyReadPlatformService,
-                                    final CodeValueReadPlatformService codeValueReadPlatformService) {
+                                    final CodeValueReadPlatformService codeValueReadPlatformService,
+                                    final OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.tellerManagementReadPlatformService = tellerManagementReadPlatformService;
@@ -70,6 +73,7 @@ public class ForexExchangeApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.currencyReadPlatformService = currencyReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
+        this.organisationCurrencyRepositoryWrapper = organisationCurrencyRepositoryWrapper;
     }
 
     @GET
@@ -160,9 +164,10 @@ public class ForexExchangeApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
+
     @GET
     @Path("transactions")
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     public String getTransactionsWtihSummaryForCashier(@Context final UriInfo uriInfo, @QueryParam("tellerId") final Long tellerId,
                                                        @QueryParam("cashierId") final Long cashierId, @QueryParam("currencyCode") final String currencyCode) {
@@ -170,10 +175,14 @@ public class ForexExchangeApiResource {
         final CashierData cashier = this.tellerManagementReadPlatformService.findCashier(cashierId);
         final StaffData staff = this.staffReadPlatformService.retrieveStaff(cashier.getStaffId());
 
-        final Date fromDate = null;
-        final Date toDate = null;
+        String actualCurrencyCode = null;
+        if (!"ALL".equalsIgnoreCase(currencyCode) && !StringUtils.isEmpty(currencyCode)) {
+            OrganisationCurrency organisationCurrency = this.organisationCurrencyRepositoryWrapper.findOneWithNotFoundDetection(currencyCode);
+            actualCurrencyCode = organisationCurrency.getCode();
+        }
+
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final Collection<ForexExchangeData> forexExchangeDataCollection = this.readPlatformService.retrieveCashierTransactions(staff.getId(), currencyCode);
+        final Collection<ForexExchangeData> forexExchangeDataCollection = this.readPlatformService.retrieveCashierTransactions(staff.getId(), actualCurrencyCode);
 
         return this.toApiJsonSerializer.serialize(settings, forexExchangeDataCollection, ForexExchangeApiConstants.FOREX_EXCHANGE_RESPONSE_DATA_PARAMETERS);
     }
