@@ -23,6 +23,8 @@ import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateRepository
 import org.mifosplatform.organisation.exchangerate.domain.ExchangeRateType;
 import org.mifosplatform.organisation.office.domain.Office;
 import org.mifosplatform.organisation.office.domain.OfficeRepository;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrency;
+import org.mifosplatform.organisation.office.domain.OrganisationCurrencyRepositoryWrapper;
 import org.mifosplatform.organisation.office.exception.OfficeNotFoundException;
 import org.mifosplatform.organisation.staff.domain.Staff;
 import org.mifosplatform.organisation.staff.domain.StaffRepository;
@@ -59,6 +61,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
     private final JournalEntryRepository glJournalEntryRepository;
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
     private final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper;
+    private final OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper;
 
     @Autowired
     public TellerWritePlatformServiceJpaImpl(final PlatformSecurityContext context,
@@ -71,7 +74,8 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
                                              final CashierTransactionRepository cashierTxnRepository,
                                              final JournalEntryRepository glJournalEntryRepository,
                                              final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper,
-                                             final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper) {
+                                             final ExchangeRateRepositoryWrapper exchangeRateRepositoryWrapper,
+                                             final OrganisationCurrencyRepositoryWrapper organisationCurrencyRepositoryWrapper) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.tellerRepository = tellerRepository;
@@ -83,6 +87,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
         this.glJournalEntryRepository = glJournalEntryRepository;
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
         this.exchangeRateRepositoryWrapper = exchangeRateRepositoryWrapper;
+        this.organisationCurrencyRepositoryWrapper = organisationCurrencyRepositoryWrapper;
     }
 
     @Override
@@ -428,8 +433,13 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final Long time = System.currentTimeMillis();
             final String uniqueVal = String.valueOf(time) + currentUser.getId() + cashierOffice.getId();
             final String transactionId = Long.toHexString(Long.parseLong(uniqueVal));
-
-            ExchangeRate exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(cashierTxn.getCurrencyCode(), ExchangeRateType.INTERMEDIARY.getValue());
+            final ExchangeRate exchangeRate;
+            OrganisationCurrency homeCurrency = this.organisationCurrencyRepositoryWrapper.findHomeCurrencyNotFoundDetection();
+            if (!cashierTxn.getCurrencyCode().equals(homeCurrency.getCode())) {
+                exchangeRate = this.exchangeRateRepositoryWrapper.findOneByCurrencyAndTypeBeforeTodayWithNotFoundDetection(cashierTxn.getCurrencyCode(), ExchangeRateType.INTERMEDIARY.getValue());
+            } else {
+                exchangeRate = null;
+            }
 
             final JournalEntry debitJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment detail
                     debitAccount, cashierTxn.getCurrencyCode(), exchangeRate,
