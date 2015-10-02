@@ -7,6 +7,8 @@ package org.mifosplatform.organisation.teller.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Provides the domain repository for accessing, adding, modifying or deleting cashiers.
@@ -16,5 +18,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
  * @since 2.0.0
  */
 public interface CashierRepository extends JpaRepository<Cashier, Long>, JpaSpecificationExecutor<Cashier> {
-    // no added behavior
+
+    Cashier findOneByStaffId(@Param("staffId") Long staffId);
 }

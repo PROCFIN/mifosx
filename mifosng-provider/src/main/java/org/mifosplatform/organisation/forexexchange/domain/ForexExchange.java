@@ -210,4 +210,20 @@ public class ForexExchange extends AbstractPersistable<Long> {
     public void setAmountTaken(BigDecimal amountTaken) {
         this.amountTaken = amountTaken;
     }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public Date getTransactionDate() {
+        return transactionDate;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
 }

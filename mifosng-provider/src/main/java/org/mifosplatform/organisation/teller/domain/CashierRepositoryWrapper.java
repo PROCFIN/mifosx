@@ -23,4 +23,10 @@ public class CashierRepositoryWrapper {
         if (cashier == null) { throw new TellerNotFoundException(id); }
         return cashier;
     }
+
+    public Cashier findOneByStaffWithNotFoundDetection(final Long staffId) {
+        final Cashier cashier = this.repository.findOneByStaffId(staffId);
+        if (cashier == null) { throw new TellerNotFoundException(staffId); }
+        return cashier;
+    }
 }
