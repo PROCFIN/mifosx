@@ -218,6 +218,10 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             throw new PlatformDataIntegrityException("error.msg.teller.duplicate.name", "Teller with name `" + name + "` already exists",
                     "name", name);
         }
+        if (realCause.getMessage().contains("IK_m_cashiers_m_staff")) {
+            final Long staffId = command.longValueOfParameterNamed("staffId");
+            throw new PlatformDataIntegrityException("error.msg.cashier.duplicate.staff.id", "Cashier with staffId `" + staffId + "` already exists", "staffId", staffId);
+        }
 
         logger.error(dve.getMessage(), dve);
         throw new PlatformDataIntegrityException("error.msg.teller.unknown.data.integrity.issue",

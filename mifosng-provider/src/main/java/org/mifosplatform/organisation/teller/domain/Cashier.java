@@ -34,7 +34,7 @@ public class Cashier extends AbstractPersistable<Long> {
     @Transient
     private Office office;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "staff_id", nullable = false)
     private Staff staff;
 
