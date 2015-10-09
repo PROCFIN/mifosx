@@ -14,7 +14,7 @@ import java.util.Date;
 
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long>, JpaSpecificationExecutor<ExchangeRate> {
 
-    @Query("from ExchangeRate er where er.currency = :currency AND type = :type AND date <= :date")
+    @Query(nativeQuery = true, value = "select er.* from m_exchange_rate er where er.currency = :currency AND type = :type AND date <= :date order by date desc limit 1")
     ExchangeRate findByCurrencyAndTypeAndDateBefore(@Param("currency") String currency, @Param("type") int type, @Param("date") Date date);
 
 }
